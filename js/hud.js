@@ -10,7 +10,7 @@ var el = {
   lvl: $('lvl'), hpFill: $('hp-fill'), hpTxt: $('hp-txt'),
   xpFill: $('xp-fill'), xpTxt: $('xp-txt'),
   atk: $('st-atk'), def: $('st-def'), kills: $('st-kills'), cp: $('cp'), cpBox: $('hud-cp'),
-  cpCubes: document.querySelectorAll('#hud-cp .cp-stack i'), cpStack: document.querySelector('#hud-cp .cp-stack'), packLvl: $('pack-lvl'), packLvlN: $('pack-lvl-n'), cpMem: $('cp-mem'), cpMemN: $('cp-mem-n'),
+  cpCubes: document.querySelectorAll('#hud-cp .cp-stack i'), cpStack: document.querySelector('#hud-cp .cp-stack'), packLvl: $('pack-lvl'), packLvlN: $('pack-lvl-n'), cpMem: $('cp-mem'), cpBiome: $('cp-biome'), cpMemN: $('cp-mem-n'),
   banner: $('banner'),
   guard: $('btn-guard'), guardSub: $('guard-sub'), guardMeter: $('guard-meter'),
   strike: $('btn-strike'), strikeSub: $('strike-sub'), strikeMeter: $('strike-meter'),
@@ -132,6 +132,11 @@ function hud(t) {
   // Цифра белая: цветной она теряется на кубиках памяти.
   el.cp.textContent = S.packLevel;
   el.cpBox.hidden = false;
+  el.cpBiome.hidden = !TUNE.biomes || !!S.tut;
+  if (TUNE.biomes) {
+    var cb = curBiome();
+    if (el.cpBiome.title !== cb.name) { el.cpBiome.title = cb.name; el.cpBiome.style.setProperty('--biome', cb.icon); }
+  }
   // Под уровнем героя — уровень текущей стаи (красный, если она выше,
   // зелёный, если ниже); под чекпоинтом — «память» стаи, если она есть.
   var inFight = S.phase === 'fight';

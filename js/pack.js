@@ -10,9 +10,10 @@ var MAX_HEALERS = 2;           // больше двух хилеров в одн
 function rollMobType(noHealer) {
   // без хилера — бросаем только по «остальной» части шкалы, пропорции
   // жёлтых/дальников/обычных сохраняются
-  var r = noHealer ? TUNE.healerRate + rnd() * Math.max(0, 1 - TUNE.healerRate) : rnd();
-  if (r < TUNE.healerRate) return 'healer';
-  r -= TUNE.healerRate;
+  var hr = biomeHealerRate();
+  var r = noHealer ? hr + rnd() * Math.max(0, 1 - hr) : rnd();
+  if (r < hr) return 'healer';
+  r -= hr;
   if (r < TUNE.yellowRate) return 'yellow';
   r -= TUNE.yellowRate;
   if (r < TUNE.rangedRate) return 'ranged';
@@ -22,9 +23,10 @@ function rollMobType(noHealer) {
 function spawnPack(now) {
   if (S.tut && !S.tut.spawned) { spawnTutorialPack(now); return; }
   savePackStart();                 // сохранение на переходе к новой стае
+  enterBiome(now);
   var packMin = Math.max(2, TUNE.packMin || 2), packMax = Math.max(packMin, TUNE.packMax || 4);
   var n = ri(packMin, packMax);
-  var progBonus = TUNE.adapt ? Math.floor(S.progress / 4) : 0;
+  var progBonus = packLevelBonus();
   S.packLevel = Math.max(1, Math.min(S.level + 6, S.level + ri(-1, 1) + progBonus));
   // Память забывается медленно: одна и та же память действует MEM_PACKS
   // стай подряд и только потом уменьшается на 1 (и отсчёт идёт заново).
@@ -102,6 +104,8 @@ function spawnPack(now) {
       // 3 коронами, — но второй раз уже не сбегает: дерётся до конца.
       var lb = S.pack[S.pack.length - 1];
       lb.rage = BOSS_FLEE_RAGE; lb.noFlee = true;
+    } else if (TUNE.biomes && curBiome().leaderRage) {
+      S.pack[S.pack.length - 1].rage = curBiome().leaderRage;   // Пепелище: вожак сразу зол
     }
   }
 

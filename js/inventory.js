@@ -91,6 +91,14 @@ function renderInfo() {
               '<div class="verdict off">' + (e.auto ? 'авто' : 'решение') + '</div></div>';
       continue;
     }
+    if (e.kind === 'biome') {
+      var bm = BIOMES[e.biome % BIOMES.length], bl = Math.floor(e.biome / BIOMES.length);
+      html += '<div class="drop" style="--rc:' + bm.icon + '"><div class="rail"></div>' +
+              '<div><div class="nm">Новый биом: ' + bm.name + (bl ? ' · круг ' + (bl + 1) : '') + '</div>' +
+              '<div class="slot">' + (bm.note || 'без особенностей') + (TUNE.biomePin ? ' · отступление сюда не уводит' : '') + '</div></div>' +
+              '<div class="verdict off">биом</div></div>';
+      continue;
+    }
     if (e.kind === 'ack') {
       html += '<div class="drop" style="--rc:var(--ink-dim)"><div class="rail"></div>' +
               '<div><div class="nm">Решили не отступать</div>' +

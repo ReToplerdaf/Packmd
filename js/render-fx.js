@@ -188,9 +188,11 @@ function render(t) {
   var gy = groundY();
 
   // фон
+  var bio = TUNE.biomes && !S.tut ? curBiome() : BIOMES[0];
   var grd = ctx.createLinearGradient(0, 0, 0, H);
-  grd.addColorStop(0, '#161a26'); grd.addColorStop(1, '#0b0e15');
+  grd.addColorStop(0, bio.bg[0]); grd.addColorStop(1, bio.bg[1]);
   ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+  if (bio !== BIOMES[0]) drawBiomeBack(bio, gy, t);
 
   ctx.save();
   var sh = S.shake > 0 ? S.shake : 0;
@@ -237,5 +239,70 @@ function render(t) {
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
   }
 
+  drawBiomeBanner(t);
   if (TUNE.debug) drawDebug(t);
+}
+
+/* ── Биомы: фон и надпись ────────────────────────────────────────── */
+
+// Детерминированный «шум» для декораций: без rnd(), чтобы фон не сбивал
+// случайные числа боя.
+function bhash(i) { var x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+
+function drawBiomeBack(bio, gy, t) {
+  ctx.save();
+  if (bio.id === 'thicket') {
+    // туман: широкие полупрозрачные полосы медленно плывут
+    for (var f = 0; f < 4; f++) {
+      var fy = gy * (0.35 + f * 0.17), fx = ((t * 0.006 * (1 + f * 0.3) + bhash(f) * W) % (W * 1.6)) - W * 0.3;
+      var fg = ctx.createRadialGradient(fx, fy, 0, fx, fy, W * 0.55);
+      fg.addColorStop(0, 'rgba(150,190,160,.08)'); fg.addColorStop(1, 'rgba(150,190,160,0)');
+      ctx.fillStyle = fg; ctx.fillRect(0, 0, W, H);
+    }
+  } else if (bio.id === 'caves') {
+    // синие кристаллы у земли и сверху
+    for (var c = 0; c < 9; c++) {
+      var top = c % 3 === 0;
+      var cx = bhash(c + 1) * W, ch = (14 + bhash(c + 20) * 26) * (top ? 0.8 : 1), cw = ch * 0.35;
+      var cy = top ? 0 : gy + 10 + bhash(c + 40) * (H - gy) * 0.25;
+      var glow = 0.35 + 0.25 * Math.sin(t / 900 + c);
+      ctx.fillStyle = 'rgba(90,166,232,' + glow.toFixed(3) + ')';
+      ctx.beginPath();
+      if (top) { ctx.moveTo(cx - cw, cy); ctx.lineTo(cx, cy + ch); ctx.lineTo(cx + cw, cy); }
+      else { ctx.moveTo(cx - cw, cy); ctx.lineTo(cx, cy - ch); ctx.lineTo(cx + cw, cy); }
+      ctx.closePath(); ctx.fill();
+    }
+  } else if (bio.id === 'ash') {
+    // искры поднимаются от земли
+    for (var e = 0; e < 18; e++) {
+      var life = 4000 + bhash(e + 7) * 3000, ph = ((t + bhash(e) * life) % life) / life;
+      var ex = bhash(e + 60) * W + Math.sin(t / 700 + e) * 8, ey = H * 0.9 - ph * H * 0.8;
+      ctx.fillStyle = 'rgba(255,' + Math.round(120 + 80 * (1 - ph)) + ',60,' + (0.7 * (1 - ph)).toFixed(3) + ')';
+      ctx.beginPath(); ctx.arc(ex, ey, 1.2 + bhash(e + 90) * 1.4, 0, 6.2832); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+// Надпись с названием нового биома: появляется, держится, гаснет.
+function drawBiomeBanner(t) {
+  var b = BIOME.banner;
+  if (!b) return;
+  var k = (t - b.start) / dur(BIOME_BANNER_MS);
+  if (k >= 1 || k < 0) { if (k >= 1) BIOME.banner = null; return; }
+  var a = Math.min(1, k / 0.15, (1 - k) / 0.25);
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  var by = groundY() + 70;              // под передним мобом, над кнопками
+  ctx.fillStyle = 'rgba(0,0,0,.5)';
+  ctx.fillRect(0, by - 32, W, 64);
+  ctx.fillStyle = '#f2e6c8';
+  ctx.font = '700 24px "IBM Plex Mono", monospace';
+  ctx.fillText(b.name.toUpperCase(), W / 2, by - (b.note ? 8 : 0));
+  if (b.note) {
+    ctx.fillStyle = '#b8bccb'; ctx.font = '13px "IBM Plex Mono", monospace';
+    ctx.fillText(b.note, W / 2, by + 17);
+  }
+  ctx.restore();
 }

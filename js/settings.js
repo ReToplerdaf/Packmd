@@ -49,6 +49,7 @@ bindSlider('s-rangedlead','o-rangedlead','rangedLead', function (v) { return v +
 bindSlider('s-fatigue','o-fatigue','fatigueWindow', function (v) { return v + ' мс'; });
 bindSlider('s-packmin','o-packmin','packMin', function (v) { return v; });
 bindSlider('s-packmax','o-packmax','packMax', function (v) { return v; });
+bindSlider('s-bossevery','o-bossevery','bossEvery', function (v) { return v; });
 bindSlider('s-autoafter','o-autoafter','autoAfter', function (v) { return v ? (v / 1000) + ' с' : 'выкл'; });
 bindSlider('s-autoblock','o-autoblock','autoBlock', function (v) { return v + ' %'; }, 100);
 
@@ -62,6 +63,8 @@ bindToggle('c-debug', 'debug');
 bindToggle('c-adapt', 'adapt');
 bindToggle('c-fatigue', 'fatigue');
 bindToggle('c-combo', 'combo');
+bindToggle('c-biomes', 'biomes');
+bindToggle('c-biomepin', 'biomePin');
 
 // Сброс всех ползунков и тумблеров к умолчаниям версии.
 $('tune-reset').addEventListener('click', function () {

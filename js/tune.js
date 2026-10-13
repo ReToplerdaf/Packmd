@@ -9,7 +9,8 @@
 var TUNE_DEFAULTS = { lead: 500, guard: 150, cool: 900, critRate: 0.85, shieldRate: 0.55, mobRate: 3600, speed: 0.5, retreatWindow: 8000, rageStep: 0.5, pulseWindow: 300, sound: true, debug: false, adapt: true,
   healerRate: 0.2, yellowRate: 0.4, rangedRate: 0.32, rangedInterval: 2000, healInterval: 5000, rangedLead: 1050, yellowCounter: 300, fatigue: true, fatigueWindow: 900, packMin: 3, packMax: 5,
   autoAfter: 15000, autoBlock: 0.35,
-  combo: true, perfect: 0.4 };
+  combo: true, perfect: 0.4,
+  biomes: true, bossEvery: 10, biomePin: true };
 var TUNE = JSON.parse(JSON.stringify(TUNE_DEFAULTS));
 
 var CRIT_MULT = 2.5;        // во сколько раз крит моба больнее обычного удара

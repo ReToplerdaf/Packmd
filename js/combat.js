@@ -260,6 +260,7 @@ function shiftTimers(d) {
   for (var gp = 0; gp < S.guardPressStamps.length; gp++) S.guardPressStamps[gp] += d;
   S.counterUntil += d; S.strikeCoolAt += d; S.phaseUntil += d;
   if (S.telegraph) { S.telegraph.start += d; S.telegraph.hitAt += d; }
+  if (BIOME.banner) BIOME.banner.start += d;
   for (var i = 0; i < S.pack.length; i++) {
     var m = S.pack[i];
     if (m.staggerUntil) m.staggerUntil += d;
@@ -302,7 +303,7 @@ function resolvePrompt(choice, auto) {
   hidePrompt();
   S.deathStreak = 0;
   if (choice === 'retreat') {
-    S.progress = Math.max(-4, S.progress - 3);
+    S.progress = Math.max(retreatFloor(), S.progress - 3);
     S.resist = Math.max(0, S.resist - 2);
     if (S.resist === 0) S.memLeft = 0;
     pushLog(auto ? { kind: 'retreat', progress: S.progress, auto: true } : { kind: 'retreat', progress: S.progress });
@@ -598,7 +599,7 @@ function step(now) {
       sfx('shield');
       floatText('ЩИТ', '#4a9fe8', 0, 0, false);
     } else if (rnd() < TUNE.critRate) {
-      S.telegraph = { start: now, hitAt: now + dur(TUNE.lead), mob: mob };
+      S.telegraph = { start: now, hitAt: now + dur(biomeLead()), mob: mob };
       sfx('telegraph');
     } else {
       mobNormalHit(now, mob);
