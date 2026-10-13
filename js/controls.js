@@ -55,6 +55,39 @@ el.tutSkip.addEventListener('click', tutSkip);
 $('tut-start').addEventListener('click', function () { closeBackpack(); startTutorial(); });
 el.backpackClose.addEventListener('pointerdown', function (e) { e.preventDefault(); closeBackpack(); });
 
+// Рюкзак открывается на pointerdown, а палец отпускают уже над открытым окном:
+// браузер шлёт click в то, что теперь под пальцем (обычно вкладка «Инфо»).
+// Этот click глотаем — срабатывает только следующее, новое касание.
+var bagGhostClick = false;
+el.bagBtn.addEventListener('pointerdown', function () { bagGhostClick = true; });
+window.addEventListener('pointerdown', function (e) {
+  if (e.target.closest && !e.target.closest('#btn-bag')) bagGhostClick = false;
+}, true);
+window.addEventListener('click', function (e) {
+  if (!bagGhostClick || !e.isTrusted) return;
+  bagGhostClick = false;
+  if (el.backpackOverlay.hidden) return;
+  e.preventDefault(); e.stopPropagation();
+}, true);
+
+// Ползунки в «Настройке»: сначала тап по строке выбирает ползунок, и только
+// выбранный двигается. Прокрутка списка снимает выбор — пальцем, листающим
+// настройки, ничего случайно не сдвинуть.
+var tuneBox = document.querySelector('.tune');
+tuneBox.addEventListener('click', function (e) {
+  var row = e.target.closest('.tune-row');
+  if (!row) return;
+  var was = tuneBox.querySelector('.tune-row.active');
+  if (was && was !== row) was.classList.remove('active');
+  row.classList.add('active');
+});
+function tuneUnselect() {
+  var was = tuneBox.querySelector('.tune-row.active');
+  if (was) was.classList.remove('active');
+}
+$('pane-tune').addEventListener('scroll', tuneUnselect, { passive: true });
+el.bagBtn.addEventListener('pointerdown', tuneUnselect);
+
 /* ── Кнопки: pointerdown, а не click — на телефоне это десятки мс ── */
 
 // Кнопки теперь — большие угловые зоны, и на них легко лечь вторым
