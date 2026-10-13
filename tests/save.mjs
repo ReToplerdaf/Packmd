@@ -150,7 +150,13 @@ await Promise.all([page.waitForEvent('load'), page.click('#save-yes')]);
 await page.waitForTimeout(500);
 check('импорт через интерфейс', await page.evaluate(() => S.level === 9 && S.kills === 9 && S.hp === 50));
 
-// 9. Бой идёт после загрузки.
+// 9. В обучении тоже сохраняется: бросили на середине — герой на месте.
+await page.evaluate(() => { startTutorial(); S.kills = 321; saveGame(); });
+await page.reload();
+await page.waitForTimeout(500);
+check('сохранение в обучении', await page.evaluate(() => S.kills === 321));
+
+// 10. Бой идёт после загрузки.
 await page.waitForTimeout(4000);
 check('после загрузки бой идёт', await page.evaluate(() => S.phase === 'fight' && S.pack.length > 0));
 

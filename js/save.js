@@ -68,7 +68,7 @@ function buildSave() {
   return {
     v: SAVE_VERSION,
     savedAt: Date.now(),
-    hero: { level: S.level, xp: S.xp, hp: dead ? S.stats.maxHp : S.hp, kills: S.kills },
+    hero: { level: S.level, xp: S.xp, hp: dead || S.tut ? S.stats.maxHp : S.hp, kills: S.kills },
     gear: gear,
     bag: bag,
     pack: { progress: S.progress, resist: resist, memLeft: memLeft, bossFled: bossFled, deathStreak: S.deathStreak },
@@ -78,9 +78,10 @@ function buildSave() {
 }
 
 function saveGame() {
-  // В обучении не сохраняем (стая особая, смерти нет); отметка «есть что
-  // сохранить» доживёт до его конца.
-  if (SAVE.off || S.tut) return;
+  // Сохраняем и в обучении: на телефоне его часто бросают на середине, и
+  // герой не должен откатываться. Сама стая обучения не сохраняется — если
+  // обучение не пройдено, после загрузки оно начнётся заново с этим героем.
+  if (SAVE.off) return;
   SAVE.dirty = false;
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(buildSave())); } catch (e) {}
 }
@@ -243,6 +244,7 @@ function reloadWith(fn) {
 
 document.addEventListener('visibilitychange', function () { if (document.hidden) saveGame(); });
 window.addEventListener('pagehide', saveGame);
+window.addEventListener('beforeunload', saveGame);
 
 /* ── Кнопки во вкладке «Настройка» ───────────────────────────────── */
 
@@ -263,7 +265,6 @@ window.addEventListener('pagehide', saveGame);
   yes.addEventListener('click', function () { var fn = pending; pending = null; ask.hidden = true; if (fn) fn(); });
 
   exp.addEventListener('click', function () {
-    if (S.tut) { say('Сохранение появится после обучения.'); return; }
     var s = exportSave();
     out.value = s; out.hidden = false; out.readOnly = true;
     out.focus(); out.select();
