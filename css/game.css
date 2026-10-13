@@ -498,7 +498,7 @@ button.drop-verdict, .drop button.verdict {
 .gear-empty { color: var(--ink-faint); font-style: italic; font-size: 12px; }
 
 /* настройка */
-.tune { display: flex; flex-direction: column; gap: 11px; }
+.tune { display: flex; flex-direction: column; gap: 5px; }
 .tune-row { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; align-items: center; }
 .tune-row label { font-size: 11px; color: var(--ink-dim); letter-spacing: .02em; }
 .tune-row output {
@@ -511,6 +511,19 @@ button.drop-verdict, .drop button.verdict {
   accent-color: var(--accent);
   touch-action: manipulation;
 }
+/* Невыбранный ползунок не ловит палец (тап уходит в строку и выбирает её),
+   выбранный двигается и не отдаёт жест прокрутке. */
+.tune-row {
+  margin: 0 -8px; padding: 6px 8px;
+  border: 1px solid transparent; border-radius: 6px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.tune-row input[type="range"] { pointer-events: none; opacity: .45; }
+.tune-row.active { border-color: var(--accent-dim); background: rgba(201,149,74,.10); }
+.tune-row.active label { color: var(--ink); }
+.tune-row.active input[type="range"] { pointer-events: auto; opacity: 1; touch-action: none; }
+.tune-hint { font-size: 10.5px; color: var(--ink-faint); margin: -4px 0 -6px; }
+.tune > .toggles, .tune > .tune-export, .tune > .tune-note { margin-top: 8px; }
 .tune-export { display: flex; flex-direction: column; gap: 6px; }
 .tune-export textarea {
   width: 100%; resize: none;
