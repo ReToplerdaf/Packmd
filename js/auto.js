@@ -20,6 +20,11 @@ var OFFLINE_KEEP = 6;            // сколько лучших вещей с о
 // 4 прогона × 60 мин, 13.10): 311 убийств в час, ~17 уровней за первый час.
 // Пересчитать после изменений баланса.
 var OFFLINE_KILLS_PER_HOUR = 310;
+// Оффлайн идёт медленнее полупассива: доля его темпа (решение автора 13.10)
+// и предел засчитанного времени. Не в TUNE, чтобы старые сохранённые
+// настройки не перекрывали эти числа.
+var OFFLINE_EFF = 0.5;
+var OFFLINE_CAP_H = 8;
 
 // Игрок что-то нажал — авто выключается, отсчёт до него идёт заново.
 function autoTouch() {
@@ -61,9 +66,9 @@ function updateDeathNext(now) {
 // Начисляет опыт и лут за ms отсутствия по пассивному темпу. Чекпоинт,
 // память, HP не меняются, смертей нет. Возвращает сводку для экрана.
 function grantOffline(ms) {
-  var capMs = TUNE.offlineCapH * 3600000;
+  var capMs = OFFLINE_CAP_H * 3600000;
   var used = Math.min(ms, capMs);
-  var kills = Math.floor(used / 3600000 * OFFLINE_KILLS_PER_HOUR * TUNE.offlineEff);
+  var kills = Math.floor(used / 3600000 * OFFLINE_KILLS_PER_HOUR * OFFLINE_EFF);
   var res = { ms: ms, used: used, capped: ms > capMs, kills: 0, packs: 0, xp: 0, levelFrom: S.level, kept: [], lost: 0 };
   if (kills <= 0) return res;
   var drops = [];
