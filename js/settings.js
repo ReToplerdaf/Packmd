@@ -56,7 +56,6 @@ function bindToggle(id, key, after) {
 }
 bindToggle('c-sound', 'sound', unlockAudio);
 bindToggle('c-debug', 'debug');
-bindToggle('c-ring',  'ring');
 bindToggle('c-adapt', 'adapt');
 bindToggle('c-fatigue', 'fatigue');
 

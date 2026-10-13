@@ -6,7 +6,6 @@
 // прозрачной сферой — она растёт и светлеет к моменту удара, так видно
 // область и момент, когда блок реально отобьёт этот выстрел.
 function drawShieldZone(t) {
-  if (!TUNE.ring) return;
   for (var i = 0; i < S.pack.length; i++) {
     var m = S.pack[i];
     if (m.type !== 'ranged' || !m.rangedTelegraph || m.hp <= 0) continue;
