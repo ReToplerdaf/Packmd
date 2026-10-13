@@ -116,6 +116,14 @@ function drawMob(m, x, gy, t, isFront) {
       ctx.lineTo(0, cy); ctx.lineTo(4 * s, cy - 6 * s); ctx.lineTo(8 * s, cy);
       ctx.stroke();
     }
+    if (m.chief) {
+      // Метка главаря — багровый ромб над коронами.
+      var my = (melee ? -hgt * 1.2 : -hgt) - 3 * s - crowns * 5 * s - 6 * s;
+      ctx.fillStyle = '#c8325a'; ctx.strokeStyle = '#ffb0c4'; ctx.lineWidth = 1.2 * s;
+      ctx.beginPath();
+      ctx.moveTo(0, my - 4 * s); ctx.lineTo(3.4 * s, my); ctx.lineTo(0, my + 4 * s); ctx.lineTo(-3.4 * s, my);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
   }
 
   // Оружие. Обычный моб и вожак — с большим двуручным мечом; в блок

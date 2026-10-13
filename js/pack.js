@@ -41,6 +41,8 @@ function spawnPack(now) {
     S.packResist = 0;
   }
 
+  if (isChiefPack()) { spawnChiefPack(now); return; }
+
   // Если вожак только что сбежал, он гарантированно «появляется в
   // следующей стае» — без этого лидер мог укатиться в стаю, где n<3,
   // и просто исчезнуть из игры, что и было замечено при тесте.
@@ -105,12 +107,41 @@ function spawnPack(now) {
       var lb = S.pack[S.pack.length - 1];
       lb.rage = BOSS_FLEE_RAGE; lb.noFlee = true;
     } else if (TUNE.biomes && curBiome().leaderRage) {
-      S.pack[S.pack.length - 1].rage = curBiome().leaderRage;   // Пепелище: вожак сразу зол
+      S.pack[S.pack.length - 1].rage = curBiome().leaderRage;   // Метеорит: вожак сразу зол
     }
   }
 
   S.pack = S.pack.concat(backline);
 
+  S.mobSwingAt = now + dur(TUNE.mobRate * 0.7);
+  S.telegraph = null;
+}
+
+// Стая главаря: свита из обычных мобов впереди, главарь последним.
+// Сбежавший вожак ждёт следующей обычной стаи (S.bossFled не трогаем).
+function spawnChiefPack(now) {
+  S.pack = [];
+  for (var i = 0; i < CHIEF_ESCORT; i++) {
+    var ms = mobStats(S.packLevel, false);
+    S.pack.push({
+      maxHp: ms.maxHp, hp: ms.maxHp, atk: ms.atk, xp: ms.xp,
+      leader: false, staggerUntil: 0, hurt: 0,
+      wob: rnd() * 6.28, size: rr(0.85, 1.05),
+      shield: false, pulse: null, rage: 0, vulnMult: 1, guarding: null, guardedBy: null, retreatDeadline: 0,
+      type: 'normal', healPulse: null, rangedTelegraph: null, rangedSwingAt: 0
+    });
+  }
+  var cs = mobStats(S.packLevel, true);
+  var chp = Math.round(cs.maxHp * CHIEF_HP);
+  S.pack.push({
+    maxHp: chp, hp: chp, atk: Math.round(cs.atk * CHIEF_ATK), xp: Math.round(cs.xp * CHIEF_XP),
+    leader: true, chief: true, chiefPhase: 1, noFlee: true, staggerUntil: 0, hurt: 0,
+    wob: rnd() * 6.28, size: CHIEF_SIZE,
+    shield: false, pulse: null, rage: curBiome().leaderRage || 0, vulnMult: 1, guarding: null, guardedBy: null, retreatDeadline: 0,
+    type: 'normal', healPulse: null, rangedTelegraph: null, rangedSwingAt: 0
+  });
+  BIOME.banner = { name: 'Главарь', note: curBiome().name, start: now };
+  sfx('enrage');
   S.mobSwingAt = now + dur(TUNE.mobRate * 0.7);
   S.telegraph = null;
 }

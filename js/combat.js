@@ -84,7 +84,7 @@ function enrageMob(mob) {
   floatText('ЗЛИТСЯ', '#ff6a4d', 0, 0, false);
 }
 
-function mobAtk(mob) { return mob.atk * (1 + TUNE.rageStep * (mob.rage || 0)); }
+function mobAtk(mob) { return mob.atk * (1 + TUNE.rageStep * (mob.rage || 0)) * chiefAtkMult(mob); }
 
 function bossMob() {
   for (var i = 0; i < S.pack.length; i++) if (S.pack[i].leader) return S.pack[i];
@@ -170,6 +170,7 @@ function killMob(mob) {
   // переходит на следующего моба «бесплатно», гасим его.
   if (S.counterMob === mob) { S.counterUntil = 0; S.counterMob = null; }
   S.kills++;
+  if (mob.chief) { pushInfo({ kind: 'chief', biome: BIOME.pack || 0 }); markSave(); }
   grantXp(comboXp(mob.xp));        // серия даёт бонус к опыту
   dropFrom(mob);
   if (S.telegraph && S.telegraph.mob === mob) S.telegraph = null;
@@ -338,6 +339,11 @@ function resolveCrit(now) {
     sfx('block');
     floatText(perfect ? 'ИДЕАЛЬНО' : 'БЛОК', perfect ? '#ffd27a' : '#3fdcc4', 0, 0, true);
 
+    if (tg.first) {
+      // Первый удар двойного удара главаря: блок гасит урон, но окна
+      // контратаки не даёт — оно откроется после второго блока.
+      mob.staggerUntil = 0; S.counterUntil = 0; S.counterMob = null;
+    }
     var reflect = S.stats.blockReward;
     if (reflect > 0) hitMob(mob, reflect * 0.9);
   } else {
@@ -349,12 +355,17 @@ function resolveCrit(now) {
     sfx('crit');
     floatText('−' + dmg, '#ff7a63', -1, 0, true);
     if (S.hp <= 0) { S.hp = 0; heroDies(now); }
-    else if (TUNE.adapt && mob.hp > 0 && mob.hp / mob.maxHp < RETREAT_FRAC) {
+    else if (TUNE.adapt && !mob.chief && mob.hp > 0 && mob.hp / mob.maxHp < RETREAT_FRAC) {
       retreatBehindProtector(mob, now);
     }
     // Жёлтый моб: пропущенная реакция на его крит после снятия щита
     // усиливает боса дополнительно — со всеми последствиями, вплоть до побега.
     if (tg.yellowFollow) enrageBoss(now);
+  }
+  // Двойной удар: за первым сразу второй замах.
+  if (tg.first && mob.hp > 0 && S.phase === 'fight' && S.pack.indexOf(mob) >= 0) {
+    S.telegraph = { start: now, hitAt: now + dur(CHIEF_DOUBLE_GAP), mob: mob };
+    sfx('telegraph');
   }
   dirty.stats = true;
 }
@@ -529,6 +540,7 @@ function step(now) {
 
   var mob = front();
   if (!mob) { S.phase = 'walk'; S.phaseUntil = now + dur(900); return; }
+  if (mob.chief) chiefTick(mob, now);
 
   // Моб дошёл до фронта уже со щитом, но без активного пульса (жёлтый —
   // щит у него поднят с самого спавна) — запускаем отсчёт только теперь,
@@ -572,7 +584,7 @@ function step(now) {
   }
 
   if (now >= S.mobSwingAt) {
-    S.mobSwingAt = now + dur(TUNE.mobRate * rr(0.85, 1.15));
+    S.mobSwingAt = now + dur(TUNE.mobRate * rr(0.85, 1.15) * chiefRateMult(mob));
     if (mob.shield || (mob.type === 'healer' && mob.healPulse)) {
       // Пока щит не разбит (или канал лечения не прерван) — моб держит его
       // и не замахивается ни на крит, ни на обычный удар. Иначе получался
@@ -592,14 +604,14 @@ function step(now) {
     mob.noShieldNext = false;
     // Красный (обычный) моб сам в блок не встаёт — только когда прикрывает
     // раненого (см. retreatBehindProtector). Случайный щит — лишь у жёлтого.
-    if (TUNE.adapt && canShield && mob.type !== 'normal' && rnd() < TUNE.shieldRate) {
+    if (TUNE.adapt && canShield && (mob.type !== 'normal' || mob.chiefPhase === 2) && rnd() < TUNE.shieldRate) {
       mob.shield = true;
       mob.pulse = { start: now, hitAt: now + dur(PULSE_LEAD) };
       S.flash = 0.4; S.flashColor = '#4a9fe8';
       sfx('shield');
       floatText('ЩИТ', '#4a9fe8', 0, 0, false);
     } else if (rnd() < TUNE.critRate) {
-      S.telegraph = { start: now, hitAt: now + dur(biomeLead()), mob: mob };
+      S.telegraph = { start: now, hitAt: now + dur(biomeLead() * chiefLeadMult(mob)), mob: mob };
       sfx('telegraph');
     } else {
       mobNormalHit(now, mob);

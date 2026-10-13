@@ -30,28 +30,29 @@ const state = page => page.evaluate(() => ({
   const g = await openGame(browser, file, { seed: 5 });
   await run(g.page, 300, { bot: { skill: 1 } });
   let s = await state(g.page);
-  check('начало — Пустошь, без модификаторов', s.biome === 0 && s.name === 'Пустошь' && s.healer === 0.2 && s.lead === 500, s);
+  await g.page.screenshot({ path: path.join(OUT, 'biome-0.png') });
+  check('начало — Русло реки, без модификаторов', s.biome === 0 && s.name === 'Русло реки' && s.healer === 0.2 && s.lead === 500, s);
 
   await toPack(g.page, 10);
   s = await state(g.page);
-  check('чекпоинт 10 — Чаща: надпись, «Инфо», хилеров +10%', s.biome === 1 && s.banner === 'Чаща' && s.info === 1 && Math.abs(s.healer - 0.3) < 1e-9 && s.icon === 'Чаща', s);
+  check('чекпоинт 10 — Пещера: надпись, «Инфо», замах крита короче на 10%', s.biome === 1 && s.banner === 'Пещера' && s.info === 1 && s.lead === 450 && s.icon === 'Пещера', s);
   await g.page.screenshot({ path: path.join(OUT, 'biome-1.png') });
 
   await toPack(g.page, 20);
   s = await state(g.page);
-  check('Пещеры — замах крита короче на 10%', s.biome === 2 && s.lead === 450 && s.healer === 0.2, s);
+  check('Пустынный город — хилеров +10%', s.biome === 2 && Math.abs(s.healer - 0.3) < 1e-9 && s.lead === 500, s);
   await run(g.page, 200, { bot: { skill: 1 } });
   await g.page.screenshot({ path: path.join(OUT, 'biome-2.png') });
 
   await toPack(g.page, 30);
   s = await state(g.page);
-  check('Пепелище — вожак сразу со стаком злости', s.biome === 3 && (s.leaderRage === undefined || s.leaderRage >= 1), s);
+  check('Метеорит — вожак сразу со стаком злости', s.biome === 3 && (s.leaderRage === undefined || s.leaderRage >= 1), s);
   await run(g.page, 200, { bot: { skill: 1 } });
   await g.page.screenshot({ path: path.join(OUT, 'biome-3.png') });
 
   await toPack(g.page, 40);
   s = await state(g.page);
-  check('после 4-го биома — круг 2 и +2 к уровню стаи', s.biome === 4 && s.name === 'Пустошь' && s.banner === 'Пустошь · круг 2' && s.bonus === 10 + 2, s);
+  check('после 4-го биома — круг 2 и +2 к уровню стаи', s.biome === 4 && s.name === 'Русло реки' && s.banner === 'Русло реки · круг 2' && s.bonus === 10 + 2, s);
 
   // Отступление не уводит в прошлый биом (по умолчанию), а с выключенным закреплением — уводит.
   const retreat = (p, pin) => g.page.evaluate(([p, pin]) => { TUNE.biomePin = pin; S.progress = p; resolvePrompt('retreat'); var r = S.progress; TUNE.biomePin = true; return r; }, [p, pin]);
@@ -64,12 +65,44 @@ const state = page => page.evaluate(() => ({
   await g.close();
 }
 
+// Главарь: последняя стая биома, три фазы, двойной удар, гарантированная редкая вещь.
+{
+  const g = await openGame(browser, file, { seed: 7 });
+  await run(g.page, 200, { bot: { skill: 1 } });
+  await toPack(g.page, 9);
+  const pk = await g.page.evaluate(() => S.pack.map(m => ({ type: m.type, chief: !!m.chief, leader: m.leader })));
+  check('стая главаря: двое свиты и главарь последним', pk.length === 3 && pk[2].chief && !pk[0].chief && !pk[1].chief && pk[0].type === 'normal', pk);
+  await g.page.screenshot({ path: path.join(OUT, 'chief-1.png') });
+  const ph = await g.page.evaluate(() => {
+    var c = chiefMob(); S.pack = [c]; S.telegraph = null; var now = performance.now(), r = {};
+    c.hp = c.maxHp * 0.6; chiefTick(c, now); r.p2 = c.chiefPhase; r.shield = c.shield;
+    breakShield(c, now); r.first = !!(S.telegraph && S.telegraph.first);
+    S.guardUntil = S.telegraph.hitAt + 1; resolveCrit(S.telegraph.hitAt);
+    r.noCounter = S.counterUntil < now; r.second = !!(S.telegraph && !S.telegraph.first);
+    S.guardUntil = S.telegraph.hitAt + 1; resolveCrit(S.telegraph.hitAt);
+    r.counter = S.counterUntil > now;
+    c.hp = c.maxHp * 0.2; chiefTick(c, performance.now()); r.p3 = c.chiefPhase; r.atk = chiefAtkMult(c);
+    return r;
+  });
+  check('фазы: 2-я со щитом, раскол → двойной удар, контра только после второго блока, 3-я злее', ph.p2 === 2 && ph.shield && ph.first && ph.noCounter && ph.second && ph.counter && ph.p3 === 3 && ph.atk === 1.25, ph);
+  await run(g.page, 30, { bot: { skill: 1 } });
+  await g.page.screenshot({ path: path.join(OUT, 'chief-3.png') });
+  const end = await g.page.evaluate(() => { var c = chiefMob(); S.telegraph = null; killMob(c);
+    var it = S.log[0] && S.log[0].item; return { info: S.info.slice(0, 3).map(e => e.kind), rarity: it && RARITY.indexOf(it.rarity), progress: S.progress }; });
+  check('главарь повержен: запись в «Инфо», вещь «Редкий» или выше, биом пройден', end.info.includes('chief') && end.rarity >= 2 && end.progress === 10, end);
+  check('нет ошибок в консоли (главарь)', g.errors.length === 0, g.errors);
+  await g.close();
+}
+
 // Выключенные биомы — всё как раньше.
 {
   const g = await openGame(browser, file, { seed: 5, tune: { biomes: false } });
   await run(g.page, 200, { bot: { skill: 1 } });
+  await toPack(g.page, 19);
+  const noChief = await g.page.evaluate(() => !chiefMob());
   await toPack(g.page, 20);
   const s = await state(g.page);
+  check('биомы выключены: главаря нет', noChief);
   check('биомы выключены: модификаторов и надписи нет, иконка скрыта', s.healer === 0.2 && s.lead === 500 && !s.banner && s.bonus === 5 &&
     await g.page.evaluate(() => document.getElementById('cp-biome').hidden), s);
   await g.close();

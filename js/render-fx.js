@@ -188,11 +188,11 @@ function render(t) {
   var gy = groundY();
 
   // фон
-  var bio = TUNE.biomes && !S.tut ? curBiome() : BIOMES[0];
+  var bio = TUNE.biomes && !S.tut ? curBiome() : BIOME_PLAIN;
   var grd = ctx.createLinearGradient(0, 0, 0, H);
   grd.addColorStop(0, bio.bg[0]); grd.addColorStop(1, bio.bg[1]);
   ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
-  if (bio !== BIOMES[0]) drawBiomeBack(bio, gy, t);
+  if (bio !== BIOME_PLAIN) drawBiomeBack(bio, gy, t);
 
   ctx.save();
   var sh = S.shake > 0 ? S.shake : 0;
@@ -239,6 +239,7 @@ function render(t) {
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
   }
 
+  drawChiefBar();
   drawBiomeBanner(t);
   if (TUNE.debug) drawDebug(t);
 }
@@ -249,39 +250,144 @@ function render(t) {
 // случайные числа боя.
 function bhash(i) { var x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
 
+// Коридор биома: дно уходит к дальней точке очереди стаи (влево вверх),
+// по бокам — стены биома (тростник, скалы, дома, края кратеров), которые
+// мельчают к дальней точке, как сама очередь.
+var CORRIDOR_N = 22;           // сколько элементов стены с каждой стороны
+function corridorGeom(gy) {
+  return {
+    vx: W * 0.15, vy: gy * 0.06,                 // дальняя точка
+    lx: -W * 0.06, ly: gy + H * 0.30,            // левый берег у зрителя
+    rx: W * 1.04, ry: gy + H * 0.10              // правый берег у зрителя
+  };
+}
+// Точка на стене: side −1 — левая, +1 — правая; f 0 — у зрителя, 1 — у дальней точки.
+function corridorPt(c, side, f) {
+  var x0 = side < 0 ? c.lx : c.rx, y0 = side < 0 ? c.ly : c.ry;
+  return { x: x0 + (c.vx - x0) * f, y: y0 + (c.vy - y0) * f, k: 1.7 * (1 - f) };
+}
+function corridorF(i) { return 1 - Math.pow(0.84, i + 0.4); }
+
 function drawBiomeBack(bio, gy, t) {
+  var c = corridorGeom(gy);
   ctx.save();
-  if (bio.id === 'thicket') {
-    // туман: широкие полупрозрачные полосы медленно плывут
-    for (var f = 0; f < 4; f++) {
-      var fy = gy * (0.35 + f * 0.17), fx = ((t * 0.006 * (1 + f * 0.3) + bhash(f) * W) % (W * 1.6)) - W * 0.3;
-      var fg = ctx.createRadialGradient(fx, fy, 0, fx, fy, W * 0.55);
-      fg.addColorStop(0, 'rgba(150,190,160,.08)'); fg.addColorStop(1, 'rgba(150,190,160,0)');
-      ctx.fillStyle = fg; ctx.fillRect(0, 0, W, H);
+  // дно коридора
+  var floorCol = { river: ['rgba(40,110,150,.10)', 'rgba(50,130,170,.32)'], cave: ['rgba(40,46,60,.15)', 'rgba(36,40,52,.55)'],
+    city: ['rgba(120,90,50,.12)', 'rgba(150,115,65,.38)'], meteor: ['rgba(60,24,24,.15)', 'rgba(50,20,22,.55)'] }[bio.id];
+  var fg = ctx.createLinearGradient(c.vx, c.vy, W * 0.5, H);
+  fg.addColorStop(0, floorCol[0]); fg.addColorStop(1, floorCol[1]);
+  ctx.fillStyle = fg;
+  ctx.beginPath(); ctx.moveTo(c.vx, c.vy); ctx.lineTo(c.rx, c.ry); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.lineTo(c.lx, c.ly); ctx.closePath(); ctx.fill();
+
+  if (bio.id === 'river') {
+    // струи текут по руслу к зрителю
+    ctx.strokeStyle = 'rgba(160,215,240,.22)'; ctx.lineCap = 'round';
+    for (var r = 0; r < 18; r++) {
+      var ph = ((t * 0.00012 * (0.7 + bhash(r) * 0.6)) + bhash(r + 30)) % 1;   // 0 — далеко, 1 — близко
+      var f = 1 - ph, lane = 0.15 + bhash(r + 3) * 0.7;
+      var a = corridorPt(c, -1, f), b = corridorPt(c, 1, f);
+      var px = a.x + (b.x - a.x) * lane, py = a.y + (b.y - a.y) * lane;
+      var len = (6 + 26 * a.k);
+      var dx = c.vx - px, dy = c.vy - py, dl = Math.sqrt(dx * dx + dy * dy) || 1;
+      ctx.lineWidth = 0.6 + 1.6 * a.k;
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + dx / dl * len, py + dy / dl * len); ctx.stroke();
     }
-  } else if (bio.id === 'caves') {
-    // синие кристаллы у земли и сверху
-    for (var c = 0; c < 9; c++) {
-      var top = c % 3 === 0;
-      var cx = bhash(c + 1) * W, ch = (14 + bhash(c + 20) * 26) * (top ? 0.8 : 1), cw = ch * 0.35;
-      var cy = top ? 0 : gy + 10 + bhash(c + 40) * (H - gy) * 0.25;
-      var glow = 0.35 + 0.25 * Math.sin(t / 900 + c);
-      ctx.fillStyle = 'rgba(90,166,232,' + glow.toFixed(3) + ')';
-      ctx.beginPath();
-      if (top) { ctx.moveTo(cx - cw, cy); ctx.lineTo(cx, cy + ch); ctx.lineTo(cx + cw, cy); }
-      else { ctx.moveTo(cx - cw, cy); ctx.lineTo(cx, cy - ch); ctx.lineTo(cx + cw, cy); }
-      ctx.closePath(); ctx.fill();
+  } else if (bio.id === 'meteor') {
+    // сам метеорит светится у дальней точки
+    var mg = ctx.createRadialGradient(c.vx, c.vy, 0, c.vx, c.vy, W * 0.45);
+    mg.addColorStop(0, 'rgba(255,110,50,.35)'); mg.addColorStop(1, 'rgba(255,110,50,0)');
+    ctx.fillStyle = mg; ctx.fillRect(0, 0, W, H);
+    var pulse = 0.6 + 0.4 * Math.sin(t / 500);
+    ctx.fillStyle = 'rgba(255,' + Math.round(90 + 60 * pulse) + ',40,.95)';
+    ctx.beginPath(); ctx.moveTo(c.vx - 9, c.vy + 4); ctx.lineTo(c.vx - 3, c.vy - 9); ctx.lineTo(c.vx + 7, c.vy - 6); ctx.lineTo(c.vx + 10, c.vy + 4); ctx.closePath(); ctx.fill();
+  } else if (bio.id === 'cave') {
+    // сталактиты под сводом
+    for (var st = 0; st < 7; st++) {
+      var sx = bhash(st + 1) * W, sh = 12 + bhash(st + 20) * 22;
+      ctx.fillStyle = 'rgba(70,80,100,.8)';
+      ctx.beginPath(); ctx.moveTo(sx - sh * 0.3, 0); ctx.lineTo(sx, sh); ctx.lineTo(sx + sh * 0.3, 0); ctx.closePath(); ctx.fill();
     }
-  } else if (bio.id === 'ash') {
-    // искры поднимаются от земли
-    for (var e = 0; e < 18; e++) {
-      var life = 4000 + bhash(e + 7) * 3000, ph = ((t + bhash(e) * life) % life) / life;
-      var ex = bhash(e + 60) * W + Math.sin(t / 700 + e) * 8, ey = H * 0.9 - ph * H * 0.8;
-      ctx.fillStyle = 'rgba(255,' + Math.round(120 + 80 * (1 - ph)) + ',60,' + (0.7 * (1 - ph)).toFixed(3) + ')';
-      ctx.beginPath(); ctx.arc(ex, ey, 1.2 + bhash(e + 90) * 1.4, 0, 6.2832); ctx.fill();
+  }
+
+  // стены: от дальних к ближним, чтобы ближние перекрывали
+  for (var i = CORRIDOR_N - 1; i >= 0; i--) {
+    for (var side = -1; side <= 1; side += 2) {
+      var seed = i * 2 + (side > 0 ? 1 : 0);
+      var p = corridorPt(c, side, corridorF(i) + (bhash(seed + 400) - 0.5) * 0.03);
+      drawWallPiece(bio.id, p.x, p.y, p.k, side, seed, t);
+    }
+  }
+
+  if (bio.id === 'meteor' || bio.id === 'city') {
+    // искры над кратерами / песок в воздухе
+    for (var e = 0; e < 20; e++) {
+      var life = 4000 + bhash(e + 7) * 3000, ph2 = ((t + bhash(e) * life) % life) / life;
+      if (bio.id === 'meteor') {
+        var ex = bhash(e + 60) * W + Math.sin(t / 700 + e) * 8, ey = H * 0.9 - ph2 * H * 0.8;
+        ctx.fillStyle = 'rgba(255,' + Math.round(120 + 80 * (1 - ph2)) + ',60,' + (0.7 * (1 - ph2)).toFixed(3) + ')';
+        ctx.beginPath(); ctx.arc(ex, ey, 1.2 + bhash(e + 90) * 1.4, 0, 6.2832); ctx.fill();
+      } else {
+        ctx.fillStyle = 'rgba(230,190,120,' + (0.25 * (1 - Math.abs(ph2 - 0.5) * 2)).toFixed(3) + ')';
+        ctx.fillRect(ph2 * W, gy * 0.2 + bhash(e + 8) * H * 0.6, 2, 1);
+      }
     }
   }
   ctx.restore();
+}
+
+// Один элемент стены коридора в точке (x, y) — у основания; k — масштаб.
+function drawWallPiece(id, x, y, k, side, seed, t) {
+  var s = Math.max(0.12, k);
+  var h1 = bhash(seed + 11), h2 = bhash(seed + 23), h3 = bhash(seed + 37);
+  if (id === 'river') {
+    // пучок тростника с метёлками, слегка качается
+    var stems = 5 + Math.floor(h1 * 4), sway = Math.sin(t / 900 + seed) * 3 * s;
+    for (var q = 0; q < stems; q++) {
+      var bx = x + (bhash(seed * 7 + q) - 0.5) * 44 * s, hh = (70 + bhash(seed * 5 + q) * 60) * s;
+      ctx.strokeStyle = q % 2 ? '#3d5a2e' : '#4f6e36'; ctx.lineWidth = Math.max(0.8, 3 * s); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(bx, y); ctx.quadraticCurveTo(bx + sway * 0.5, y - hh * 0.6, bx + sway, y - hh); ctx.stroke();
+      if (q % 2 === 0) {
+        ctx.fillStyle = '#6b4a2a';
+        ctx.beginPath(); ctx.ellipse(bx + sway, y - hh, Math.max(0.8, 2.6 * s), Math.max(2, 8 * s), 0, 0, 6.2832); ctx.fill();
+      }
+    }
+  } else if (id === 'cave') {
+    // скальный выступ с кристаллом
+    var rw = (60 + h1 * 50) * s, rh = (90 + h2 * 80) * s;
+    ctx.fillStyle = side < 0 ? '#2a303e' : '#232836';
+    ctx.beginPath();
+    ctx.moveTo(x - rw * 0.6, y); ctx.lineTo(x - rw * 0.5, y - rh * 0.6); ctx.lineTo(x - rw * 0.1, y - rh);
+    ctx.lineTo(x + rw * 0.35, y - rh * 0.75); ctx.lineTo(x + rw * 0.6, y); ctx.closePath(); ctx.fill();
+    if (h3 > 0.55) {
+      var glow = 0.45 + 0.3 * Math.sin(t / 900 + seed);
+      ctx.fillStyle = 'rgba(90,166,232,' + glow.toFixed(3) + ')';
+      var cx = x + (h1 - 0.5) * rw * 0.5, ch = 22 * s;
+      ctx.beginPath(); ctx.moveTo(cx - ch * 0.3, y - rh * 0.3); ctx.lineTo(cx, y - rh * 0.3 - ch); ctx.lineTo(cx + ch * 0.3, y - rh * 0.3); ctx.closePath(); ctx.fill();
+    }
+  } else if (id === 'city') {
+    // глинобитный дом: стена, тёмные окна, иногда купол
+    var hw = (55 + h1 * 40) * s, hh = (60 + h2 * 70) * s;
+    var front = side < 0 ? '#8a6a3e' : '#7a5c34', shade = '#5e4626';
+    ctx.fillStyle = front; ctx.fillRect(x - hw / 2, y - hh, hw, hh);
+    ctx.fillStyle = shade; ctx.fillRect(side < 0 ? x + hw / 2 - hw * 0.15 : x - hw / 2, y - hh, hw * 0.15, hh);
+    if (h3 > 0.6) { ctx.fillStyle = front; ctx.beginPath(); ctx.arc(x, y - hh, hw * 0.3, Math.PI, 0); ctx.fill(); }
+    ctx.fillStyle = '#2a1e10';
+    var ww = Math.max(1, 8 * s), wh = Math.max(1.5, 12 * s);
+    ctx.fillRect(x - hw * 0.25 - ww / 2, y - hh * 0.7, ww, wh);
+    ctx.fillRect(x + hw * 0.15 - ww / 2, y - hh * 0.7, ww, wh);
+    if (h1 > 0.4) ctx.fillRect(x - ww * 0.7, y - wh * 1.7, ww * 1.4, wh * 1.7);   // дверной проём
+  } else if (id === 'meteor') {
+    // вал кратера: тёмный горб с раскалёнными трещинами
+    var cw = (80 + h1 * 50) * s, chh = (40 + h2 * 40) * s;
+    ctx.fillStyle = side < 0 ? '#2a1418' : '#221014';
+    ctx.beginPath(); ctx.ellipse(x, y, cw / 2, chh, 0, Math.PI, 0); ctx.fill();
+    var gl = 0.5 + 0.35 * Math.sin(t / 600 + seed);
+    ctx.strokeStyle = 'rgba(255,' + Math.round(90 + 50 * gl) + ',40,' + gl.toFixed(3) + ')';
+    ctx.lineWidth = Math.max(0.6, 1.8 * s);
+    ctx.beginPath();
+    ctx.moveTo(x - cw * 0.25, y - chh * 0.2); ctx.lineTo(x - cw * 0.05, y - chh * 0.55); ctx.lineTo(x + cw * 0.1, y - chh * 0.4); ctx.lineTo(x + cw * 0.22, y - chh * 0.75);
+    ctx.stroke();
+  }
 }
 
 // Надпись с названием нового биома: появляется, держится, гаснет.
@@ -304,5 +410,24 @@ function drawBiomeBanner(t) {
     ctx.fillStyle = '#b8bccb'; ctx.font = '13px "IBM Plex Mono", monospace';
     ctx.fillText(b.note, W / 2, by + 17);
   }
+  ctx.restore();
+}
+
+// Полоса здоровья главаря — широкая, вверху между плашками, с отметками фаз.
+function drawChiefBar() {
+  var m = chiefMob();
+  if (!m) return;
+  var x0 = 84, x1 = W - 84, y = 26, bw = x1 - x0;
+  if (bw < 60) return;
+  var frac = Math.max(0, m.hp / m.maxHp);
+  ctx.save();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillStyle = '#ffb0c4'; ctx.font = '600 10px "IBM Plex Mono", monospace';
+  ctx.fillText('ГЛАВАРЬ · ФАЗА ' + (m.chiefPhase || 1), W / 2, y - 3);
+  ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(x0, y, bw, 8);
+  ctx.fillStyle = m.chiefPhase === 3 ? '#ff4d34' : '#c8325a'; ctx.fillRect(x0, y, bw * frac, 8);
+  ctx.fillStyle = 'rgba(255,255,255,.7)';
+  ctx.fillRect(x0 + bw * 0.33 - 1, y - 2, 2, 12);
+  ctx.fillRect(x0 + bw * 0.66 - 1, y - 2, 2, 12);
   ctx.restore();
 }

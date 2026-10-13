@@ -23,10 +23,10 @@ function grantXp(amount) {
 }
 
 function dropFrom(mob) {
-  var chance = mob.leader ? 1 : 0.34;
+  var chance = mob.leader ? 1 : 0.34;   // вожак и главарь — всегда
   if (rnd() > chance) return;
 
-  var item = rollItem(S.packLevel);
+  var item = rollItem(S.packLevel, mob.chief ? CHIEF_MIN_RARITY : 0);
   S.tm.drops++;
 
   // Экипировка теперь ручная: предмет ложится в журнал, игрок сам решает,

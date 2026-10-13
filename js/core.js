@@ -100,9 +100,9 @@ function rollAffixValue(af, ilvl) {
   return Math.round(rr(r.lo, r.hi));            // pct — целые проценты
 }
 
-function rollItem(ilvl) {
+function rollItem(ilvl, minRarity) {
   var slot = pick(SLOTS);
-  var rar = weighted(RARITY);
+  var rar = weighted(minRarity ? RARITY.slice(minRarity) : RARITY);   // minRarity — индекс в RARITY
   var base = pick(slot.bases);
 
   var stats = { atk: 0, maxHp: 0, def: 0, critChance: 0, critDmg: 0, atkSpeed: 0, guardBonus: 0, blockReward: 0 };

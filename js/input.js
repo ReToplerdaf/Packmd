@@ -54,7 +54,11 @@ function breakShield(mob, now) {
   // Даём полную паузу и запрещаем блок на ближайшем ходу.
   S.mobSwingAt = Math.max(S.mobSwingAt, now + dur(TUNE.mobRate));
   mob.noShieldNext = true;
-  if (mob.type === 'yellow' && mob.hp > 0) {
+  if (mob.chief && mob.hp > 0) {
+    // Главарь во 2-й фазе: после раскола щита — двойной удар (см. resolveCrit).
+    S.telegraph = { start: now, hitAt: now + dur(TUNE.yellowCounter), mob: mob, yellowFollow: true, first: true };
+    sfx('telegraph');
+  } else if (mob.type === 'yellow' && mob.hp > 0) {
     // Жёлтый моб: снятие щита сразу оборачивается его критом — но не
     // мгновенно, а коротким отдельным замахом (тот же принцип, что у
     // обычного крита): замах длится «Контрблок

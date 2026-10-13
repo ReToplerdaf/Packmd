@@ -9,11 +9,13 @@
 // Модификаторы: healer — прибавка к шансу хилера, lead — множитель замаха
 // крита, leaderRage — сколько стаков злости у вожака с самого спавна.
 var BIOMES = [
-  { id: 'waste',   name: 'Пустошь',  bg: ['#161a26', '#0b0e15'], icon: '#6b7aa8' },
-  { id: 'thicket', name: 'Чаща',     bg: ['#14211b', '#08100c'], icon: '#5fb072', healer: 0.10, note: 'хилеров больше' },
-  { id: 'caves',   name: 'Пещеры',   bg: ['#0e1016', '#040508'], icon: '#5aa6e8', lead: 0.9, note: 'замах крита короче' },
-  { id: 'ash',     name: 'Пепелище', bg: ['#2a1416', '#110808'], icon: '#e8643c', leaderRage: 1, note: 'вожак сразу зол' }
+  { id: 'river',  name: 'Русло реки',      bg: ['#14202a', '#0a1016'], icon: '#4fa3c7' },
+  { id: 'cave',   name: 'Пещера',          bg: ['#0e1016', '#040508'], icon: '#5aa6e8', lead: 0.9, note: 'замах крита короче' },
+  { id: 'city',   name: 'Пустынный город', bg: ['#2a2216', '#130e08'], icon: '#d8a84e', healer: 0.10, note: 'хилеров больше' },
+  { id: 'meteor', name: 'Метеорит',        bg: ['#22121a', '#0a0508'], icon: '#e8643c', leaderRage: 1, note: 'вожак сразу зол' }
 ];
+// Фон, когда биомы выключены, и в обучении — как было до биомов.
+var BIOME_PLAIN = { id: 'plain', bg: ['#161a26', '#0b0e15'] };
 var BIOME_LOOP_BONUS = 2;      // +уровень стаи за каждый пройденный круг биомов
 var BIOME_BANNER_MS = 1500;    // сколько висит надпись с названием нового биома
 // Биом текущей стаи (номер с начала игры; фиксируется на спавне) и надпись о смене.
@@ -57,5 +59,49 @@ function enterBiome(now) {
       pushInfo({ kind: 'biome', biome: idx });
       markSave();
     }
+  }
+}
+
+/* ── Главарь ─────────────────────────────────────────────────────── */
+
+// Последняя стая каждого биома — стая главаря: главарь и двое обычных
+// мобов свиты перед ним. Главарь не сбегает и не прячется; злость и короны —
+// как у вожака. Три фазы по здоровью, переход — пауза, вспышка, «ФАЗА N».
+var CHIEF_HP = 2.5;            // здоровье главаря — во столько раз больше, чем у вожака
+var CHIEF_ATK = 1.1;           // и урон
+var CHIEF_XP = 5;              // опыт — ×5 от вожака
+var CHIEF_SIZE = 1.4;            // вожак — 1.25
+var CHIEF_ESCORT = 2;          // мобов свиты
+var CHIEF_PHASE_PAUSE = 1000;  // пауза на переходе фазы
+var CHIEF_LEAD = 0.85;         // фаза 1: замах крита короче
+var CHIEF_RAGE_ATK = 1.25;     // фаза 3: урон
+var CHIEF_RAGE_RATE = 0.8;     // фаза 3: ходы чаще
+var CHIEF_DOUBLE_GAP = 1200;   // фаза 2: между ударами двойного удара (больше отката щита)
+var CHIEF_MIN_RARITY = 2;      // гарантированная вещь — «Редкий» или выше (индекс в RARITY)
+
+function isChiefPack() {
+  if (!TUNE.biomes || !TUNE.adapt || !TUNE.chief || S.tut || S.progress < 0) return false;
+  return S.progress % biomeLen() === biomeLen() - 1;
+}
+function chiefPhaseFor(m) { var f = m.hp / m.maxHp; return f > 0.66 ? 1 : (f > 0.33 ? 2 : 3); }
+function chiefLeadMult(m) { return m && m.chief && m.chiefPhase === 1 ? CHIEF_LEAD : 1; }
+function chiefRateMult(m) { return m && m.chief && m.chiefPhase === 3 ? CHIEF_RAGE_RATE : 1; }
+function chiefAtkMult(m) { return m && m.chief && m.chiefPhase === 3 ? CHIEF_RAGE_ATK : 1; }
+function chiefMob() { for (var i = 0; i < S.pack.length; i++) if (S.pack[i].chief) return S.pack[i]; return null; }
+
+// Проверка фазы — каждый кадр боя, пока главарь впереди.
+function chiefTick(m, now) {
+  if (!m || !m.chief || m.hp <= 0) return;
+  var ph = chiefPhaseFor(m);
+  if (ph <= m.chiefPhase) return;
+  m.chiefPhase = ph;
+  S.telegraph = null;                                   // замах прерывается переходом
+  S.mobSwingAt = Math.max(S.mobSwingAt, now + dur(CHIEF_PHASE_PAUSE));
+  S.flash = 0.9; S.flashColor = '#ff4d34'; S.shake = 0.6;
+  sfx('enrage');
+  floatText('ФАЗА ' + ph, '#ff9130', 0, 0, true);
+  if (ph === 2) {                                        // фаза 2 начинается со щита
+    m.shield = true;
+    m.pulse = { start: now + dur(CHIEF_PHASE_PAUSE) - dur(PULSE_LEAD), hitAt: now + dur(CHIEF_PHASE_PAUSE) };
   }
 }

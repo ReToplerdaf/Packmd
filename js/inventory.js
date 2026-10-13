@@ -99,6 +99,14 @@ function renderInfo() {
               '<div class="verdict off">биом</div></div>';
       continue;
     }
+    if (e.kind === 'chief') {
+      var cbm = BIOMES[e.biome % BIOMES.length];
+      html += '<div class="drop" style="--rc:#ff9130"><div class="rail"></div>' +
+              '<div><div class="nm">Главарь повержен</div>' +
+              '<div class="slot">биом «' + cbm.name + '» пройден' + (TUNE.biomePin ? ' · дальше отступление сюда не уведёт' : '') + '</div></div>' +
+              '<div class="verdict off">главарь</div></div>';
+      continue;
+    }
     if (e.kind === 'ack') {
       html += '<div class="drop" style="--rc:var(--ink-dim)"><div class="rail"></div>' +
               '<div><div class="nm">Решили не отступать</div>' +
