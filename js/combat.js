@@ -175,6 +175,7 @@ function killMob(mob) {
     S.phase = 'walk';
     S.phaseUntil = performance.now() + dur(ri(900, 1500));
     if (TUNE.adapt) { S.progress++; S.deathStreak = 0; }   // стая зачищена — шаг вперёд по чекпоинтам
+    markSave();
   }
 }
 
@@ -194,6 +195,7 @@ function heroDies(now) {
   sfx('death');
   floatText('пал', 'var(--telegraph)', 0, 0, true);
   var lost = loseUnequippedLoot();
+  markSave();
   showDeath(lost);
 }
 
@@ -270,6 +272,7 @@ function openBackpack() {
   S.pauseStart = performance.now();
   // Открыли рюкзак — всё, что там лежит, уже увидено и больше не «новое».
   for (var i = 0; i < S.log.length; i++) if (S.log[i].item) S.log[i].seen = true;
+  markSave();
   updateBagBadge();
   dirty.loot = true; dirty.gear = true;
   el.backpackOverlay.hidden = false;
@@ -298,6 +301,7 @@ function resolvePrompt(choice) {
   }
   S.phase = 'walk';
   S.phaseUntil = now + dur(700);
+  markSave();
 }
 
 function resolveCrit(now) {

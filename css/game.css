@@ -487,6 +487,14 @@ button.drop-verdict, .drop button.verdict {
   border: 1px solid var(--line); border-radius: 4px;
   font-family: var(--font-num); font-size: 10.5px; padding: 6px;
 }
+.save-box { border-top: 1px solid var(--line-soft); padding-top: 9px; }
+.save-h { font-size: 11px; color: var(--ink-dim); letter-spacing: .02em; }
+.save-msg { font-size: 11px; color: var(--ink-dim); line-height: 1.4; }
+.save-confirm { font-size: 12px; color: var(--ink); line-height: 1.4; display: flex; flex-direction: column; gap: 6px; }
+.save-confirm[hidden] { display: none; }
+.save-confirm .prompt-actions { flex-direction: row; }
+.save-confirm .prompt-actions .prompt-btn { flex: 1; }
+.prompt-btn.save-reset { color: var(--telegraph); }
 .tune-note {
   font-size: 10.5px; color: var(--ink-faint); line-height: 1.5;
   border-top: 1px solid var(--line-soft); padding-top: 9px;

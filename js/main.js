@@ -20,15 +20,19 @@ function frame(t) {
   audioCues();
   render(t);
   hud(t);
+  if (SAVE.dirty) saveGame();
   requestAnimationFrame(frame);
 }
 
 function start(restored) {
   recalc();
-  S.hp = S.stats.maxHp;
+  var loaded = loadGame();               // сохранённый прогресс, если есть
+  if (!loaded) S.hp = S.stats.maxHp;
   S.phase = 'walk';
   S.phaseUntil = performance.now() + dur(700);
   S.tm.started = performance.now();
+  // Закрыли вкладку на вопросе после 2-й смерти подряд — задаём его снова.
+  if (loaded && TUNE.adapt && S.deathStreak >= 2) { S.phase = 'prompt'; showPrompt(); }
   if (!tutDone() || /[?&]tutorial\b/.test(location.search)) startTutorial();   // первый запуск — сразу обучение
   renderLoot(); renderGear(); renderTelem();
   requestAnimationFrame(frame);

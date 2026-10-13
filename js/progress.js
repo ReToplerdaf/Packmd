@@ -18,6 +18,7 @@ function grantXp(amount) {
     S.flash = 1; S.flashColor = '#c9954a';
     sfx('level');
     pushLog({ kind: 'level', level: S.level });
+    markSave();
   }
 }
 
@@ -32,6 +33,7 @@ function dropFrom(mob) {
   // надевать ли его — весовая функция (item.score) только подсказывает.
   sfx('loot', item.rarity.id);
   pushLog({ kind: 'item', item: item });
+  markSave();
 }
 
 // Вызывается только нажатием кнопки «надеть» в журнале лута.
@@ -41,6 +43,7 @@ function equipItem(item) {
   S.tm.equips++;
   recalc();
   dirty.loot = true; dirty.gear = true;
+  markSave();
   sfx('equip');
 }
 
@@ -90,6 +93,7 @@ function fleeWounded(mob, now) {
   S.memLeft = MEM_PACKS;                         // новый побег — отсчёт забывания заново
   S.tm.flees++;
   pushLog({ kind: 'flee', resist: S.resist });
+  markSave();
   S.flash = 0.5; S.flashColor = '#3fdcc4';
   sfx('flee');
   floatText('сбежал', '#8fd6c9', 0, 0, false);

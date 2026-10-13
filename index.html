@@ -168,6 +168,21 @@
               <button type="button" class="prompt-btn alt" id="tune-reset">Сбросить к умолчаниям</button>
               <textarea id="tune-export-out" readonly rows="4" hidden></textarea>
             </div>
+            <div class="tune-export save-box">
+              <div class="save-h">Прогресс сохраняется сам</div>
+              <button type="button" class="prompt-btn" id="save-export">Скопировать сохранение</button>
+              <button type="button" class="prompt-btn alt" id="save-import">Вставить сохранение</button>
+              <textarea id="save-out" rows="4" hidden></textarea>
+              <div class="save-msg" id="save-msg" hidden></div>
+              <div class="save-confirm" id="save-confirm" hidden>
+                <div id="save-confirm-text"></div>
+                <div class="prompt-actions">
+                  <button type="button" class="prompt-btn" id="save-yes">Да</button>
+                  <button type="button" class="prompt-btn alt" id="save-no">Отмена</button>
+                </div>
+              </div>
+              <button type="button" class="prompt-btn alt save-reset" id="save-reset">Начать заново</button>
+            </div>
             <p class="tune-note">
               Как читать блок: моб поднимает меч, тот дрожит и раскаляется до
               красного, замирает наверху и бьёт вниз («Подсветка до удара» —
@@ -284,6 +299,7 @@
 <script src="js/hud.js"></script>
 <script src="js/inventory.js"></script>
 <script src="js/settings.js"></script>
+<script src="js/save.js"></script>
 <script src="js/controls.js"></script>
 <script src="js/main.js"></script>
 

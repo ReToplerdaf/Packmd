@@ -14,6 +14,7 @@ el.loot.addEventListener('click', function (e) {
       if (S.selItem === de.item) S.selItem = null;
       S.log.splice(di, 1);
       dirty.loot = true;
+      markSave();
       renderLoot();
     }
     return;

@@ -105,6 +105,13 @@ function renderInfo() {
               '<div class="verdict off">смерть</div></div>';
       continue;
     }
+    if (e.kind === 'broken') {
+      html += '<div class="drop" style="--rc:var(--telegraph)"><div class="rail"></div>' +
+              '<div><div class="nm">Сохранение повреждено</div>' +
+              '<div class="slot">прочитать его не удалось — начата новая игра</div></div>' +
+              '<div class="verdict off">сохранение</div></div>';
+      continue;
+    }
     if (e.kind === 'full') {
       html += '<div class="drop" style="--rc:var(--ink-dim)"><div class="rail"></div>' +
               '<div><div class="nm">Рюкзак полон</div>' +

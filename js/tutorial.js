@@ -76,6 +76,7 @@ function spawnTutorialPack(now) {
 
 function startTutorial() {
   S.tut = { spawned: false, shown: {}, step: 0 };
+  SAVE.packStart = null;           // стая обучения — не обычная, памяти до неё нет
   S.pack = []; S.telegraph = null; S.deflects = [];
   S.counterUntil = 0; S.counterMob = null;
   el.deathOverlay.hidden = true;
@@ -109,6 +110,7 @@ function tutClose() {
 function tutFinish() {
   S.tut.finished = true;
   tutMarkDone();
+  markSave();
   tutShow('done');
 }
 
@@ -119,6 +121,7 @@ function tutSkip() {
     for (var i = 0; i < S.pack.length; i++) if (S.pack[i].dormant) { S.pack[i].dormant = false; S.pack[i].healSwingAt = 0; }
   }
   S.tut = null;
+  markSave();
   tutClose();
 }
 
