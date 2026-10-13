@@ -93,11 +93,44 @@ function fleeWounded(mob, now) {
   S.flash = 0.5; S.flashColor = '#3fdcc4';
   sfx('flee');
   floatText('сбежал', '#8fd6c9', 0, 0, false);
-  if (!S.pack.length) { S.phase = 'walk'; S.phaseUntil = now + dur(ri(900, 1500)); }
+  if (!S.pack.length && S.phase === 'fight') { S.phase = 'walk'; S.phaseUntil = now + dur(ri(900, 1500)); }
 }
 
+// Рюкзак (S.log) хранит только вещи; «Уровень N», «сбежал» и прочие
+// события уходят во вкладку «Инфо» (S.info) и вещи не вытесняют.
+var BAG_CAP = 36;           // сколько ненадетых вещей помещается в рюкзак
+var INFO_CAP = 60;          // сколько последних событий держит «Инфо»
+function bagCount() {
+  var n = 0;
+  for (var i = 0; i < S.log.length; i++) {
+    var it = S.log[i].item;
+    if (it && S.gear[it.slot.id] !== it) n++;
+  }
+  return n;
+}
 function pushLog(entry) {
-  S.log.unshift(entry);
-  if (S.log.length > 26) S.log.pop();
-  dirty.loot = true;
+  if (entry.item) {
+    if (bagCount() >= BAG_CAP) {
+      // Рюкзак полон: выбрасываем самую слабую вещь (по подсказке item.score),
+      // это может быть и сама новая. Запись об этом — в «Инфо».
+      var wi = -1;
+      for (var k = 0; k < S.log.length; k++) {
+        var w = S.log[k].item;
+        if (w && S.gear[w.slot.id] !== w && (wi < 0 || w.score < S.log[wi].item.score)) wi = k;
+      }
+      if (wi < 0 || entry.item.score <= S.log[wi].item.score) { pushInfo({ kind: 'full', item: entry.item }); return; }
+      var out = S.log.splice(wi, 1)[0].item;
+      if (S.selItem === out) S.selItem = null;
+      pushInfo({ kind: 'full', item: out });
+    }
+    S.log.unshift(entry);
+    dirty.loot = true;
+    return;
+  }
+  pushInfo(entry);
+}
+function pushInfo(entry) {
+  S.info.unshift(entry);
+  if (S.info.length > INFO_CAP) S.info.pop();
+  dirty.info = true;
 }

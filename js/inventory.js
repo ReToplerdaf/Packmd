@@ -63,12 +63,13 @@ function topCardHtml() {
          '<div class="affixes">' + af + '</div></div>';
 }
 
-function renderLoot() {
-  updateBagBadge();
-  if (!S.log.length) { el.loot.innerHTML = topCardHtml() + '<div class="gear-empty">Первая стая ещё впереди.</div>'; return; }
-  var html = topCardHtml();
-  for (var i = 0; i < S.log.length; i++) {
-    var e = S.log[i];
+// Вкладка «Инфо»: уровни, побеги, отступления, потери — всё, что не вещь.
+function renderInfo() {
+  if (!el.info) return;
+  if (!S.info.length) { el.info.innerHTML = '<div class="gear-empty">Пока ничего не случилось.</div>'; return; }
+  var html = '';
+  for (var i = 0; i < S.info.length; i++) {
+    var e = S.info[i];
     if (e.kind === 'level') {
       html += '<div class="drop" style="--rc:var(--accent)"><div class="rail"></div>' +
               '<div><div class="nm">Уровень ' + e.level + '</div>' +
@@ -99,11 +100,30 @@ function renderLoot() {
     }
     if (e.kind === 'lost') {
       html += '<div class="drop" style="--rc:var(--telegraph)"><div class="rail"></div>' +
-              '<div><div class="nm">Потеряно ' + e.count + ' ' + (e.count === 1 ? 'предмет' : 'предмета') + '</div>' +
+              '<div><div class="nm">Потеряно ' + e.count + ' ' + plural(e.count, 'предмет', 'предмета', 'предметов') + '</div>' +
               '<div class="slot">не успели надеть до смерти</div></div>' +
               '<div class="verdict off">смерть</div></div>';
       continue;
     }
+    if (e.kind === 'full') {
+      html += '<div class="drop" style="--rc:var(--ink-dim)"><div class="rail"></div>' +
+              '<div><div class="nm">Рюкзак полон</div>' +
+              '<div class="slot">выброшена самая слабая вещь: ' + e.item.name + ' · ' + e.item.rarity.name + '</div></div>' +
+              '<div class="verdict off">лут</div></div>';
+      continue;
+    }
+  }
+  el.info.innerHTML = html;
+}
+
+function renderLoot() {
+  updateBagBadge();
+  var cnt = '<div class="gear-empty">В рюкзаке ' + bagCount() + ' из ' + BAG_CAP + '</div>';
+  if (!S.log.length) { el.loot.innerHTML = topCardHtml() + cnt + '<div class="gear-empty">Первая стая ещё впереди.</div>'; return; }
+  var html = topCardHtml() + cnt;
+  for (var i = 0; i < S.log.length; i++) {
+    var e = S.log[i];
+    if (!e.item) continue;
     var it = e.item, af = '';
     // Надетая вещь «переехала» в верхнюю карточку — в списке её не дублируем.
     if (S.selItem && it !== S.selItem && S.gear[S.selItem.slot.id] === it) continue;

@@ -21,7 +21,7 @@ var S = {
   fatigueMult: 1, fatigueUntil: 0, guardPressStamps: [],
   counterUntil: 0, counterMob: null, strikeCoolAt: 0,
   shake: 0, flash: 0, flashColor: null,
-  floats: [], log: [], deflects: [],
+  floats: [], log: [], info: [], deflects: [],
   tm: { crits: 0, blocked: 0, taken: 0, react: [], deaths: 0, drops: 0, equips: 0, flees: 0, retreats: 0, started: 0 }
 };
 

@@ -206,14 +206,14 @@ function drawDebug(t) {
     ctx.fillText('удар через ' + Math.max(0, Math.round(S.telegraph.hitAt - t)) + ' мс', 10, y + 19);
   }
   if (t < S.guardUntil) {
-    var gp = (S.guardUntil - t) / guardWindow();
+    var gp = (S.guardUntil - t) / dur(guardWindow());
     ctx.fillStyle = 'rgba(63,220,196,.85)';
     ctx.fillRect(10, y + 9, bw * gp, 5);
     ctx.fillStyle = '#3fdcc4'; ctx.textAlign = 'right';
     ctx.fillText('блок ' + Math.round(S.guardUntil - t) + ' мс', W - 10, y + 19);
   } else if (t < S.guardCoolUntil) {
     ctx.fillStyle = 'rgba(255,255,255,.22)';
-    ctx.fillRect(10, y + 9, bw * ((S.guardCoolUntil - t) / TUNE.cool), 5);
+    ctx.fillRect(10, y + 9, bw * ((S.guardCoolUntil - t) / Math.max(1, S.guardCoolMs || dur(TUNE.cool))), 5);
   }
   ctx.restore();
 }

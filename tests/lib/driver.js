@@ -76,6 +76,12 @@
   function botStep(P, now, b) {
     var S = P.S, T = P.TUNE;
     if (visible('tut-overlay')) { document.getElementById('tut-ok').click(); return; }
+    // Кадр смерти: «Дальше» — через ту же паузу (1,6 с ÷ speed), что раньше длилась пауза смерти.
+    if (visible('death-overlay')) {
+      if (!b._deadAt) b._deadAt = now;
+      if (now - b._deadAt >= P.dur(1600)) { b._deadAt = 0; tap(document.getElementById('death-next')); }
+      return;
+    }
     if (visible('prompt-overlay')) { tap(document.getElementById(b.prompt === 'ack' ? 'prompt-ack' : 'prompt-retreat')); return; }
     if (S.paused || S.phase !== 'fight' || !b.skill) return;
 

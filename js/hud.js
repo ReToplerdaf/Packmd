@@ -14,8 +14,9 @@ var el = {
   banner: $('banner'),
   guard: $('btn-guard'), guardSub: $('guard-sub'), guardMeter: $('guard-meter'),
   strike: $('btn-strike'), strikeSub: $('strike-sub'), strikeMeter: $('strike-meter'),
-  loot: $('pane-loot'), gear: $('pane-gear'), stats: $('pane-stats'),
+  loot: $('pane-loot'), gear: $('pane-gear'), stats: $('pane-stats'), info: $('pane-info'),
   promptOverlay: $('prompt-overlay'), promptText: $('prompt-text'),
+  deathOverlay: $('death-overlay'), deathText: $('death-text'),
   bagBtn: $('btn-bag'), bagBadge: $('bag-badge'),
   backpackOverlay: $('backpack-overlay'), backpackClose: $('backpack-close'),
   tutOverlay: $('tut-overlay'), tutStep: $('tut-step'), tutH: $('tut-h'), tutText: $('tut-text'),
@@ -71,11 +72,11 @@ function hud(t) {
   var gw = guardWindow();
   if (t < S.guardUntil) {
     el.guard.classList.add('armed'); el.guard.classList.remove('cool');
-    el.guardMeter.style.width = ((S.guardUntil - t) / gw * 100) + '%';
+    el.guardMeter.style.width = ((S.guardUntil - t) / dur(gw) * 100) + '%';
     el.guardSub.textContent = 'поднят';
   } else if (t < S.guardCoolUntil) {
     el.guard.classList.remove('armed'); el.guard.classList.add('cool');
-    el.guardMeter.style.width = ((S.guardCoolUntil - t) / Math.max(1, S.guardCoolMs || TUNE.cool) * 100) + '%';
+    el.guardMeter.style.width = ((S.guardCoolUntil - t) / Math.max(1, S.guardCoolMs || dur(TUNE.cool)) * 100) + '%';
     el.guardSub.textContent = (TUNE.fatigue && t < S.fatigueUntil) ? ('устал ×' + S.fatigueMult) : 'откат';
   } else {
     el.guard.classList.remove('armed', 'cool');
@@ -98,7 +99,7 @@ function hud(t) {
     el.strikeSub.textContent = hWindow ? 'прервать!' : 'лечит…';
   } else if (t < S.counterUntil) {
     el.strike.classList.add('window');
-    el.strikeMeter.style.width = ((S.counterUntil - t) / COUNTER_MS * 100) + '%';
+    el.strikeMeter.style.width = ((S.counterUntil - t) / dur(COUNTER_MS) * 100) + '%';
     el.strikeSub.textContent = 'контра ×' + COUNTER_MULT.toFixed(1);
   } else {
     el.strike.classList.remove('window');
@@ -153,5 +154,6 @@ function hud(t) {
 
   if (dirty.loot) { renderLoot(); dirty.loot = false; }
   if (dirty.gear) { renderGear(); dirty.gear = false; }
+  if (dirty.info) { renderInfo(); dirty.info = false; }
   renderTelem();
 }

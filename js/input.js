@@ -7,11 +7,12 @@ function pressGuard() {
   if (S.paused) return;
   var now = performance.now();
   unlockAudio();
-  if (now < S.guardCoolUntil) return;
 
   // Усталость от спама: больше 3 нажатий подряд быстро — откат ×2, а если
   // спам продолжается, пока эта усталость ещё не истекла — держим ×4
-  // (дальше не растёт). Истекает сама по таймеру.
+  // (дальше не растёт). Истекает сама по таймеру. Нажатия во время отката
+  // тоже считаются: иначе откат длиннее окна, и усталость не включалась.
+  var cooling = now < S.guardCoolUntil;
   if (TUNE.fatigue) {
     if (now >= S.fatigueUntil) S.fatigueMult = 1;
     S.guardPressStamps.push(now);
@@ -23,10 +24,16 @@ function pressGuard() {
       S.guardPressStamps = [];
       sfx('fatigue');
       floatText('УСТАЛ', '#ff9130', -1, 0, false);
+      // устал посреди отката — текущий откат тоже удлиняется
+      if (cooling) {
+        S.guardCoolMs = dur(TUNE.cool * S.fatigueMult);
+        S.guardCoolUntil = Math.max(S.guardCoolUntil, S.guardUntil + S.guardCoolMs);
+      }
     }
   } else {
     S.fatigueMult = 1;
   }
+  if (cooling) return;
 
   S.guardPressedAt = now;
   S.guardUntil = now + dur(guardWindow());

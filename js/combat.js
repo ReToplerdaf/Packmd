@@ -171,7 +171,7 @@ function killMob(mob) {
   grantXp(mob.xp);
   dropFrom(mob);
   if (S.telegraph && S.telegraph.mob === mob) S.telegraph = null;
-  if (!S.pack.length) {
+  if (!S.pack.length && S.phase === 'fight') {   // герой уже пал — стая не зачтена
     S.phase = 'walk';
     S.phaseUntil = performance.now() + dur(ri(900, 1500));
     if (TUNE.adapt) { S.progress++; S.deathStreak = 0; }   // стая зачищена — шаг вперёд по чекпоинтам
@@ -179,20 +179,35 @@ function killMob(mob) {
 }
 
 function heroDies(now) {
+  if (S.phase === 'dead') return;  // второй смертельный удар в том же кадре
   if (S.tut) {                     // в обучении не умирают: остаётся 1 HP
     S.hp = 1;
     floatText('в обучении не умирают', '#8a90a6', 0, 0, false);
     return;
   }
   S.phase = 'dead';
-  S.phaseUntil = now + dur(1600);
+  S.phaseUntil = Infinity;         // ждёт «Дальше» в кадре смерти
   S.tm.deaths++;
   S.deathStreak++;
   S.telegraph = null;
   S.shake = 1;
   sfx('death');
   floatText('пал', 'var(--telegraph)', 0, 0, true);
-  loseUnequippedLoot();
+  var lost = loseUnequippedLoot();
+  showDeath(lost);
+}
+
+// Кадр-прослойка после смерти: бой стоит, пока игрок не нажмёт «Дальше».
+function showDeath(lost) {
+  el.deathText.textContent = 'Стая ' + S.packLevel + ' уровня вас одолела. ' +
+    (lost > 0 ? 'Потеряно ' + lost + ' ' + plural(lost, 'ненадетый предмет', 'ненадетых предмета', 'ненадетых предметов') + '.'
+              : 'Рюкзак был пуст — всё надетое при вас.');
+  el.deathOverlay.hidden = false;
+}
+function closeDeath() {
+  if (S.phase !== 'dead' || el.deathOverlay.hidden) return;
+  el.deathOverlay.hidden = true;
+  S.phaseUntil = 0;              // step сразу продолжит: вопрос или новая стая
 }
 
 // Смерть бьёт по рюкзаку: всё, что подобрали, но так и не надели, теряется.
@@ -208,6 +223,7 @@ function loseUnequippedLoot() {
     S.flash = 0.5; S.flashColor = '#ff4d34';
     sfx('lost');
   }
+  return lost;
 }
 
 /* ── Вопрос после 2-й смерти подряд ─────────────────────────────── */
@@ -380,6 +396,7 @@ function resolveRanged(mob, now) {
 }
 
 function step(now) {
+  if (S.phase === 'dead' && !el.deathOverlay.hidden) return;   // кадр смерти: всё стоит
   // Отбитые выстрелы долетели до цели — наносим урон.
   for (var dfi = 0; dfi < S.deflects.length; dfi++) {
     var dfl = S.deflects[dfi];
@@ -439,6 +456,7 @@ function step(now) {
       }
       if (rm.rangedTelegraph && now >= rm.rangedTelegraph.hitAt) {
         resolveRanged(rm, now);
+        if (S.phase !== 'fight') return;   // выстрел добил героя — кадр боя окончен
       }
     }
     // Хилер тоже действует по своему таймеру из любого места стаи и лечит
@@ -493,7 +511,7 @@ function step(now) {
     S.heroSwingAt = now + dur(heroSwingMs());
     hitMob(mob, 1);
     mob = front();
-    if (!mob) return;
+    if (!mob || S.phase !== 'fight') return;
   }
 
   // Подсвеченный крит уже в полёте — ждём момента удара.

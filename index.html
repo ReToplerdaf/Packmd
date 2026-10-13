@@ -63,6 +63,7 @@
         <div class="tabs" role="tablist">
           <button type="button" role="tab" id="tab-loot"  aria-selected="true"  aria-controls="pane-loot">Лут</button>
           <button type="button" role="tab" id="tab-gear"  aria-selected="false" aria-controls="pane-gear">Экип</button>
+          <button type="button" role="tab" id="tab-info"  aria-selected="false" aria-controls="pane-info">Инфо</button>
           <button type="button" role="tab" id="tab-tune"  aria-selected="false" aria-controls="pane-tune">Настройка</button>
           <button type="button" role="tab" id="tab-stats" aria-selected="false" aria-controls="pane-stats">Замеры</button>
         </div>
@@ -70,6 +71,8 @@
         <div class="tab-body" id="pane-loot" role="tabpanel" aria-labelledby="tab-loot"></div>
 
         <div class="tab-body" id="pane-gear" role="tabpanel" aria-labelledby="tab-gear" hidden></div>
+
+        <div class="tab-body" id="pane-info" role="tabpanel" aria-labelledby="tab-info" hidden></div>
 
         <div class="tab-body" id="pane-tune" role="tabpanel" aria-labelledby="tab-tune" hidden>
           <div class="tune">
@@ -157,7 +160,7 @@
             <div class="toggles">
               <label><input type="checkbox" id="c-sound" checked> Звук</label>
               <label><input type="checkbox" id="c-debug"> Показать тайминги</label>
-              <label><input type="checkbox" id="c-ring" checked> Кольцо отсчёта</label>
+              <label><input type="checkbox" id="c-ring" checked> Кольцо выстрела у щита</label>
               <label><input type="checkbox" id="c-adapt" checked> Адаптивная сложность</label>
               <label><input type="checkbox" id="c-fatigue" checked> Усталость от спама блока</label>
             </div>
@@ -241,6 +244,16 @@
       <div class="prompt-actions">
         <button type="button" class="prompt-btn" id="tut-ok">Понятно</button>
         <button type="button" class="prompt-btn alt" id="tut-skip">Пропустить обучение</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="prompt-overlay" id="death-overlay" hidden>
+    <div class="prompt-card">
+      <div class="prompt-h">Герой пал</div>
+      <p class="prompt-p" id="death-text"></p>
+      <div class="prompt-actions">
+        <button type="button" class="prompt-btn" id="death-next">Дальше</button>
       </div>
     </div>
   </div>

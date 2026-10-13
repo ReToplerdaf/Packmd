@@ -78,6 +78,7 @@ function startTutorial() {
   S.tut = { spawned: false, shown: {}, step: 0 };
   S.pack = []; S.telegraph = null; S.deflects = [];
   S.counterUntil = 0; S.counterMob = null;
+  el.deathOverlay.hidden = true;
   if (S.phase !== 'prompt') { S.phase = 'walk'; S.phaseUntil = performance.now() + dur(500); }
 }
 

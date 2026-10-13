@@ -3,7 +3,7 @@
 
 /* ── Вкладки ─────────────────────────────────────────────────────── */
 
-var TABS = [['tab-loot', 'pane-loot'], ['tab-gear', 'pane-gear'], ['tab-tune', 'pane-tune'], ['tab-stats', 'pane-stats']];
+var TABS = [['tab-loot', 'pane-loot'], ['tab-gear', 'pane-gear'], ['tab-info', 'pane-info'], ['tab-tune', 'pane-tune'], ['tab-stats', 'pane-stats']];
 TABS.forEach(function (pair) {
   $(pair[0]).addEventListener('click', function () {
     TABS.forEach(function (p) {

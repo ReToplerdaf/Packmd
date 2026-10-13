@@ -9,7 +9,7 @@ var cv = document.getElementById('arena');
 var ctx = cv.getContext('2d');
 var W = 0, H = 0, dpr = 1;
 var walkOffset = 0;
-var dirty = { loot: true, gear: true, stats: true, telem: true };
+var dirty = { loot: true, gear: true, stats: true, telem: true, info: true };
 
 function resize() {
   var r = cv.getBoundingClientRect();
@@ -114,7 +114,7 @@ function drawHero(x, gy, t) {
 
   // щит, пока блок поднят
   if (t < S.guardUntil) {
-    var gleft = (S.guardUntil - t) / guardWindow();
+    var gleft = (S.guardUntil - t) / dur(guardWindow());
     ctx.strokeStyle = 'rgba(63,220,196,' + (0.35 + 0.55 * gleft) + ')';
     ctx.lineWidth = 3.4 * s;
     ctx.beginPath();

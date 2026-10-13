@@ -41,6 +41,7 @@ el.loot.addEventListener('click', function (e) {
 
 /* ── Оверлей вопроса после 2-й смерти подряд ────────────────────── */
 
+$('death-next').addEventListener('pointerdown', function (e) { e.preventDefault(); closeDeath(); });
 $('prompt-retreat').addEventListener('pointerdown', function (e) { e.preventDefault(); resolvePrompt('retreat'); });
 $('prompt-ack').addEventListener('pointerdown', function (e) { e.preventDefault(); resolvePrompt('ack'); });
 

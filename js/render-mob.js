@@ -422,18 +422,6 @@ function drawMob(m, x, gy, t, isFront) {
     ctx.fillRect(x - bw / 2, barY, bw * frac, 4);
   }
 
-  // Кольцо отсчёта крита — только для безоружных (у вооружённых крит
-  // читается по анимации меча, кольцо там лишнее).
-  if (tg && TUNE.ring && !armed) {
-    var vsc = Math.max(0.2, (m.vs || 1));
-    var r0 = Math.min(W, H) * 0.42 / vsc, r1 = 22 * s;
-    var r = r0 + (r1 - r0) * tp;
-    var ccx = x, ccy = gy - hgt * 0.55;
-    ctx.strokeStyle = 'rgba(255,77,52,' + (0.30 + 0.62 * tp) + ')';
-    ctx.lineWidth = (1.6 + 3.4 * tp) / vsc;
-    ctx.beginPath(); ctx.arc(ccx, ccy, r, 0, 6.2832); ctx.stroke();
-  }
-
   // Кольца у Хилера больше нет — канал лечения читается по дрожи посоха
   // и вспышке сферы (см. отрисовку посоха выше).
 
