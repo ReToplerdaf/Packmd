@@ -9,10 +9,10 @@
 // Модификаторы: healer — прибавка к шансу хилера, lead — множитель замаха
 // крита, leaderRage — сколько стаков злости у вожака с самого спавна.
 var BIOMES = [
-  { id: 'river',  name: 'Русло реки',      bg: ['#86bfe0', '#d6ecf3'], icon: '#4fa3c7' },
+  { id: 'river',  name: 'Русло реки',      bg: ['#86bfe0', '#d6ecf3'], icon: '#4fa3c7', mob: 'fish' },
   { id: 'cave',   name: 'Пещера',          bg: ['#05060a', '#0c0e15'], icon: '#5aa6e8', lead: 0.9, note: 'замах крита короче', mob: 'bat' },
-  { id: 'city',   name: 'Пустынный город', bg: ['#7fb6de', '#f2dcaa'], icon: '#d8a84e', healer: 0.10, note: 'хилеров больше' },
-  { id: 'meteor', name: 'Метеорит',        bg: ['#080818', '#1c0e1a'], icon: '#e8643c', leaderRage: 1, note: 'вожак сразу зол' }
+  { id: 'city',   name: 'Пустынный город', bg: ['#7fb6de', '#f2dcaa'], icon: '#d8a84e', healer: 0.10, note: 'хилеров больше', mob: 'snake' },
+  { id: 'meteor', name: 'Метеорит',        bg: ['#080818', '#1c0e1a'], icon: '#e8643c', leaderRage: 1, note: 'вожак сразу зол', mob: 'golem' }
 ];
 // Фон, когда биомы выключены, и в обучении — как было до биомов.
 var BIOME_PLAIN = { id: 'plain', bg: ['#161a26', '#0b0e15'] };
@@ -43,23 +43,24 @@ function retreatFloor() {
   return b > 0 && TUNE.biomePin ? b * biomeLen() : -4;
 }
 
-// Мобы биомов. Свой моб биома заменяет обычного (красного) с шансом
-// TUNE.biomeMobRate; мобы уже пройденных биомов остаются в наборе с шансом
-// поменьше (BIOME_MOB_OLD от него), чтобы разнообразие копилось.
+// Мобы биомов. Обычный (красный) моб с шансом TUNE.biomeMobRate заменяется
+// мобом биома: своим или уже пройденных биомов (у тех вес BIOME_MOB_OLD),
+// чтобы разнообразие копилось.
 var BIOME_MOB_OLD = 0.4;
-var BAT_HP = 0.8, BAT_ATK = 0.7;   // летучая мышь кусает дважды, поэтому слабее красного
+// Здоровье и урон мобов биомов относительно красного.
+var BIOME_MOB_STATS = { fish: { hp: 0.8, atk: 0.8 }, bat: { hp: 0.8, atk: 0.8 }, snake: { hp: 0.9, atk: 0.9 }, golem: { hp: 1.6, atk: 1 } };
 function biomeMobType(type) {
   if (!TUNE.biomes || !TUNE.adapt || type !== 'normal') return type;
   var idx = biomeIndexAt(S.progress), pool = [], total = 0;
   for (var b = 0; b < BIOMES.length; b++) {
     if (!BIOMES[b].mob || b > idx) continue;      // биом ещё не открыт (на втором круге открыты все)
-    var w = (b === idx % BIOMES.length ? 1 : BIOME_MOB_OLD) * TUNE.biomeMobRate;
+    var w = b === idx % BIOMES.length ? 1 : BIOME_MOB_OLD;
     pool.push({ type: BIOMES[b].mob, w: w }); total += w;
   }
-  if (!pool.length) return type;
-  var r = rnd();
+  if (!pool.length || rnd() >= TUNE.biomeMobRate) return type;
+  var r = rnd() * total;
   for (var i = 0; i < pool.length; i++) { if (r < pool[i].w) return pool[i].type; r -= pool[i].w; }
-  return type;
+  return pool[pool.length - 1].type;
 }
 
 function biomeHealerRate() { return TUNE.healerRate + (TUNE.biomes ? curBiome().healer || 0 : 0); }

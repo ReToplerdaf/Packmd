@@ -204,6 +204,7 @@ function render(t) {
   var dt = lastRenderT ? Math.min(100, t - lastRenderT) : 16;
   lastRenderT = t;
   for (var e = 0; e < S.pack.length; e++) easeMob(S.pack[e], e, dt);
+  catchPlace(t);
 
   ctx.save();
   if (S.phase === 'dead') ctx.globalAlpha = 0.45;
@@ -224,6 +225,7 @@ function render(t) {
     ctx.restore();
   }
   ctx.restore();
+  drawCatch(t);
   drawRangedShots(gy, t);
   drawDeflects(t);
 

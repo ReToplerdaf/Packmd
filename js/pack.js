@@ -69,7 +69,8 @@ function spawnPack(now) {
       // хоть контры, хоть отражённого блоком выстрела.
       m.maxHp = 1; m.hp = 1;
     }
-    if (type === 'bat') { m.maxHp = m.hp = Math.max(1, Math.round(m.maxHp * BAT_HP)); m.atk = Math.max(1, Math.round(m.atk * BAT_ATK)); }
+    var bst = BIOME_MOB_STATS[type];
+    if (bst) { m.maxHp = m.hp = Math.max(1, Math.round(m.maxHp * bst.hp)); m.atk = Math.max(1, Math.round(m.atk * bst.atk)); }
     if (type === 'ranged') m.rangedSwingAt = now + dur(TUNE.rangedInterval * rr(0.6, 1.3));
     if (type === 'healer') m.healSwingAt = now;   // готов сразу: первый каст — как только переднего ранят
     if (type === 'yellow') {

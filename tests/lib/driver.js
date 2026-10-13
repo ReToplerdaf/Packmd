@@ -60,6 +60,11 @@
     node.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true }));
     return true;
   }
+  // Касание канваса в точке (x, y) его координат — цели «поймай».
+  function tapAt(x, y) {
+    var cv = document.getElementById('arena'), r = cv.getBoundingClientRect();
+    cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true, clientX: r.left + x, clientY: r.top + y }));
+  }
   function visible(id) { var n = document.getElementById(id); return n && !n.hidden; }
 
   // ── Бот ──────────────────────────────────────────────────────────────
@@ -95,6 +100,18 @@
     }
     if (visible('prompt-overlay')) { tap(document.getElementById(b.prompt === 'ack' ? 'prompt-ack' : 'prompt-retreat')); return; }
     if (S.paused || S.phase !== 'fight' || !b.skill) return;
+
+    // «Поймай»: касание по цели в середине окна (настоящим касанием канваса).
+    var cev = typeof CATCH === 'object' ? CATCH.ev : null;
+    if (cev) {
+      var chalf = (cev.closeAt - cev.openAt) / 2;
+      for (var ct = 0; ct < cev.targets.length; ct++) {
+        var tgc = cev.targets[ct];
+        if (tgc.hit || done.has(tgc) || now < cev.openAt + chalf + offset(tgc, chalf, b)) continue;
+        done.add(tgc);
+        if (wants(tgc, b.skill)) { tapAt(tgc.x, tgc.y); return; }
+      }
+    }
 
     var gw = P.dur(P.guardWindow());
     // Защита: крит ближнего и выстрелы — жмём в середине окна блока.

@@ -262,6 +262,7 @@ function shiftTimers(d) {
   S.counterUntil += d; S.strikeCoolAt += d; S.phaseUntil += d;
   if (S.telegraph) { S.telegraph.start += d; S.telegraph.hitAt += d; }
   if (BIOME.banner) BIOME.banner.start += d;
+  if (CATCH.ev) { CATCH.ev.start += d; CATCH.ev.openAt += d; CATCH.ev.closeAt += d; }
   for (var i = 0; i < S.pack.length; i++) {
     var m = S.pack[i];
     if (m.staggerUntil) m.staggerUntil += d;
@@ -541,6 +542,8 @@ function step(now) {
   var mob = front();
   if (!mob) { S.phase = 'walk'; S.phaseUntil = now + dur(900); return; }
   if (mob.chief) chiefTick(mob, now);
+  catchTick(mob, now);
+  if (S.phase !== 'fight') return;   // промах по цели «поймай» добил героя
 
   // Моб дошёл до фронта уже со щитом, но без активного пульса (жёлтый —
   // щит у него поднят с самого спавна) — запускаем отсчёт только теперь,
@@ -600,6 +603,11 @@ function step(now) {
       // лечит по своему таймеру (см. выше), в ближнем бою не участвует
       return;
     }
+    if (isCatchMob(mob)) {
+      // мобы биомов вместо крита — ход «поймай» (см. catch.js)
+      if (!CATCH.ev) catchStart(mob, now);
+      return;
+    }
     var canShield = !mob.noShieldNext;
     mob.noShieldNext = false;
     // Красный (обычный) моб сам в блок не встаёт — только когда прикрывает
@@ -612,7 +620,6 @@ function step(now) {
       floatText('ЩИТ', '#4a9fe8', 0, 0, false);
     } else if (rnd() < TUNE.critRate) {
       S.telegraph = { start: now, hitAt: now + dur(biomeLead() * chiefLeadMult(mob)), mob: mob };
-      if (mob.type === 'bat') S.telegraph.first = true;   // летучая мышь: двойной укус
       sfx('telegraph');
     } else {
       mobNormalHit(now, mob);
