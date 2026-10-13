@@ -55,7 +55,7 @@ await page.evaluate(() => {
   S.log[0].seen = true;
   S.progress = 7; S.resist = 2; S.memLeft = 1; S.bossFled = true; S.deathStreak = 1; S.kills = 42;
   S.hp = Math.round(S.stats.maxHp * 0.6);
-  SAVE.packStart = null;       // как будто между стаями
+  SAVE.packSnap = null;        // как будто между стаями
   saveGame();
 });
 const before = await sum();
@@ -66,19 +66,25 @@ check('перезагрузка: всё на месте', JSON.stringify(before)
 check('здоровье как было, не полное', after.hp < after.maxHp && after.hp === before.hp);
 
 // 2. Сохранение при закрытии вкладки (pagehide), без явного saveGame.
-await page.evaluate(() => { S.kills = 777; });
+await page.evaluate(() => { S.kills = 777; SAVE.packSnap = null; });
 await page.reload();
 await page.waitForTimeout(500);
 check('pagehide сохраняет', await page.evaluate(() => S.kills) === 777);
 
-// 3. Посреди боя: память — как перед стаей, если никто не сбежал.
-await page.waitForFunction(() => S.phase === 'fight', null, { timeout: 15000 });
-const mid = await page.evaluate(() => {
-  var ps = SAVE.packStart;
-  var d = buildSave();
-  return { ok: !!ps && d.pack.resist === ps.resist && d.pack.memLeft === ps.memLeft && d.pack.bossFled === (S.bossFled || ps.bossFled) };
+// 3. Вышли посреди стаи — её опыт, лут и убийства пропадают (нельзя
+//    фармить одну стаю перезаходом), сохранение — с начала стаи.
+await page.waitForFunction(() => S.phase === 'fight' && SAVE.packSnap, null, { timeout: 15000 });
+const snap = await page.evaluate(() => {
+  var k = SAVE.packSnap.hero.kills, b = SAVE.packSnap.bag.length;
+  S.kills += 50;
+  pushLog({ kind: 'item', item: rollItem(S.level) });
+  grantXp(xpToNext(S.level));
+  return { k: k, b: b, lvl: SAVE.packSnap.hero.level };
 });
-check('посреди боя память откатывается к началу стаи', mid.ok);
+await page.reload();
+await page.waitForTimeout(500);
+const farm = await page.evaluate(() => ({ k: S.kills, b: S.log.length, lvl: S.level }));
+check('выход посреди стаи откатывает её целиком', farm.k === snap.k && farm.b === snap.b && farm.lvl === snap.lvl, { snap, farm });
 
 // 4. Строка экспорта читается обратно один в один.
 const rt = await page.evaluate(() => {
@@ -150,11 +156,16 @@ await Promise.all([page.waitForEvent('load'), page.click('#save-yes')]);
 await page.waitForTimeout(500);
 check('импорт через интерфейс', await page.evaluate(() => S.level === 9 && S.kills === 9 && S.hp === 50));
 
-// 9. В обучении тоже сохраняется: бросили на середине — герой на месте.
-await page.evaluate(() => { startTutorial(); S.kills = 321; saveGame(); });
-await page.reload();
-await page.waitForTimeout(500);
-check('сохранение в обучении', await page.evaluate(() => S.kills === 321));
+// 9. Обучение — «стая 0»: в нём ничего не пишется; есть сохранение —
+//    обучение считается пройденным даже без флага.
+const tut = await page.evaluate(() => {
+  var before = localStorage.getItem('arena.save');
+  startTutorial(); S.kills = 321; saveGame();
+  var same = localStorage.getItem('arena.save') === before;
+  localStorage.removeItem('arena.tutorial.done');
+  return { same: same, done: tutDone() };
+});
+check('в обучении не сохраняется, сохранение = обучение пройдено', tut.same && tut.done, tut);
 
 // 10. Бой идёт после загрузки.
 await page.waitForTimeout(4000);

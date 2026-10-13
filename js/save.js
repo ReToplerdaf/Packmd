@@ -14,7 +14,8 @@ var SAVE_PREFIX = 'PACK1:';
 var SAVE = {
   dirty: false,       // что-то поменялось — запишем в конце кадра
   off: false,         // перед перезагрузкой: больше ничего не писать
-  packStart: null,    // память стаи на момент начала текущей стаи
+  packSnap: null,     // сохранение на момент начала текущей стаи
+  snapFlees: 0,       // сколько было побегов к началу стаи
   loadedAt: 0         // когда было записано загруженное сохранение (для оффлайна)
 };
 
@@ -23,11 +24,14 @@ var MIGRATIONS = {};
 
 function markSave() { SAVE.dirty = true; }
 
-// Перед началом обычной стаи запоминаем память и вожака — если вкладку
-// закроют посреди боя, стая начнётся заново с теми же значениями, а не
-// потратит «порцию» памяти или вернувшегося вожака второй раз.
+// Сохранение пишется на переходе к новой стае. Пока стая не зачищена
+// (и герой не пал), в хранилище лежит снимок с её начала: закрыли вкладку
+// посреди боя — опыт, лут и убийства этой стаи пропадают, и одну и ту же
+// стаю (например, с вожаком) нельзя фармить перезаходом.
 function savePackStart() {
-  SAVE.packStart = { resist: S.resist, memLeft: S.memLeft, bossFled: S.bossFled, flees: S.tm.flees };
+  SAVE.packSnap = buildSave();
+  SAVE.snapFlees = S.tm.flees;
+  markSave();
 }
 
 /* ── Запись ──────────────────────────────────────────────────────── */
@@ -56,13 +60,6 @@ function buildSave() {
     info.push(o);
   }
 
-  var resist = S.resist, memLeft = S.memLeft, bossFled = S.bossFled;
-  var ps = SAVE.packStart;
-  if (S.phase === 'fight' && ps) {
-    // Стая начнётся заново: память — как перед ней, если за бой никто не сбежал.
-    if (S.tm.flees === ps.flees) { resist = ps.resist; memLeft = ps.memLeft; }
-    bossFled = bossFled || ps.bossFled;
-  }
   var dead = S.phase === 'dead' || S.phase === 'prompt';
 
   return {
@@ -71,19 +68,35 @@ function buildSave() {
     hero: { level: S.level, xp: S.xp, hp: dead || S.tut ? S.stats.maxHp : S.hp, kills: S.kills },
     gear: gear,
     bag: bag,
-    pack: { progress: S.progress, resist: resist, memLeft: memLeft, bossFled: bossFled, deathStreak: S.deathStreak },
+    pack: { progress: S.progress, resist: S.resist, memLeft: S.memLeft, bossFled: S.bossFled, deathStreak: S.deathStreak },
     combo: { best: COMBO.bestEver },
     info: info
   };
 }
 
+// Что записать сейчас: между стаями и после смерти — текущее состояние,
+// посреди боя — снимок с начала стаи. Побег за этот бой всё же
+// засчитывается (иначе перезаход сбрасывал бы память стаи).
+function saveData() {
+  var snap = S.phase === 'fight' ? SAVE.packSnap : null;
+  if (!snap) return buildSave();
+  var d = JSON.parse(JSON.stringify(snap));
+  d.savedAt = Date.now();
+  if (S.tm.flees !== SAVE.snapFlees) {
+    d.pack.resist = S.resist; d.pack.memLeft = S.memLeft;
+    d.pack.bossFled = d.pack.bossFled || S.bossFled;
+  }
+  return d;
+}
+
 function saveGame() {
-  // Сохраняем и в обучении: на телефоне его часто бросают на середине, и
-  // герой не должен откатываться. Сама стая обучения не сохраняется — если
-  // обучение не пройдено, после загрузки оно начнётся заново с этим героем.
-  if (SAVE.off) return;
+  // Обучение — это «стая 0»: пока оно идёт, ничего не пишем. Первое
+  // сохранение появляется на переходе к стае 1, после него обучение
+  // считается пройденным (см. tutDone). Отметка «есть что сохранить»
+  // доживёт до конца обучения.
+  if (SAVE.off || S.tut) return;
   SAVE.dirty = false;
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(buildSave())); } catch (e) {}
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(saveData())); } catch (e) {}
 }
 
 /* ── Проверка и разбор ───────────────────────────────────────────── */
@@ -221,7 +234,7 @@ function loadGame() {
 /* ── Строка для переноса ─────────────────────────────────────────── */
 
 function exportSave() {
-  var json = JSON.stringify(buildSave());
+  var json = JSON.stringify(saveData());
   return SAVE_PREFIX + btoa(unescape(encodeURIComponent(json)));
 }
 

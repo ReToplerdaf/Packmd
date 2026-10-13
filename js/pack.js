@@ -21,7 +21,7 @@ function rollMobType(noHealer) {
 
 function spawnPack(now) {
   if (S.tut && !S.tut.spawned) { spawnTutorialPack(now); return; }
-  savePackStart();
+  savePackStart();                 // сохранение на переходе к новой стае
   var packMin = Math.max(2, TUNE.packMin || 2), packMax = Math.max(packMin, TUNE.packMax || 4);
   var n = ri(packMin, packMax);
   var progBonus = TUNE.adapt ? Math.floor(S.progress / 4) : 0;

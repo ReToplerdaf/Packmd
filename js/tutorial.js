@@ -40,7 +40,9 @@ var TUT_TIPS = {
     p: 'Вы встретили всех мобов. Дальше обычная игра.<br>Точные нажатия копят <b>серию</b> (счётчик под «стаей»): с 5 подряд опыт ×1.1, с 15 — ×1.25, с 30 — ×1.5. Нажатие ровно на щелчок — «идеально», +2. Пропущенный удар или промах серию сбрасывает.<br>Пройти обучение снова: Рюкзак → Настройка.' }
 };
 
-function tutDone() { try { return !!localStorage.getItem(TUT_KEY); } catch (e) { return true; } }
+// Пройдено, если стоит флаг или уже есть сохранение (оно появляется только
+// после обучения — «стая 0» пройдена).
+function tutDone() { try { return !!(localStorage.getItem(TUT_KEY) || localStorage.getItem('arena.save')); } catch (e) { return true; } }
 function tutMarkDone() { try { localStorage.setItem(TUT_KEY, '1'); } catch (e) {} }
 
 function tutMob(type, leader, ms) {
@@ -76,7 +78,6 @@ function spawnTutorialPack(now) {
 
 function startTutorial() {
   S.tut = { spawned: false, shown: {}, step: 0 };
-  SAVE.packStart = null;           // стая обучения — не обычная, памяти до неё нет
   S.pack = []; S.telegraph = null; S.deflects = [];
   S.counterUntil = 0; S.counterMob = null;
   el.deathOverlay.hidden = true;
