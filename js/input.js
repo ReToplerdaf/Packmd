@@ -6,6 +6,7 @@
 function pressGuard() {
   if (S.paused) return;
   var now = performance.now();
+  autoTouch();
   unlockAudio();
 
   // Усталость от спама: больше 3 нажатий подряд быстро — откат ×2, а если
@@ -43,12 +44,33 @@ function pressGuard() {
   sfx('guard');
 }
 
+// Щит пойман в такт: разбит, и (у жёлтого) сразу его быстрый крит.
+function breakShield(mob, now) {
+  hitMob(mob, 1, null, true);   // тайминг верный — щит разбит
+  // Таймер хода моба тикал всё время, пока стоял блок, и мог уже
+  // истечь — тогда моб ходил в тот же кадр и с шансом сразу снова
+  // вставал в блок: выглядело так, будто удар не прошёл / прошёл дважды.
+  // Даём полную паузу и запрещаем блок на ближайшем ходу.
+  S.mobSwingAt = Math.max(S.mobSwingAt, now + dur(TUNE.mobRate));
+  mob.noShieldNext = true;
+  if (mob.type === 'yellow' && mob.hp > 0) {
+    // Жёлтый моб: снятие щита сразу оборачивается его критом — но не
+    // мгновенно, а коротким отдельным замахом (тот же принцип, что у
+    // обычного крита): замах длится «Контрблок
+    // жёлтого» миллисекунд, и решает всё та же точная синхронизация
+    // с блоком в момент hitAt — reuse resolveCrit ничего не меняя.
+    S.telegraph = { start: now, hitAt: now + dur(TUNE.yellowCounter), mob: mob, yellowFollow: true };
+    sfx('telegraph');
+  }
+}
+
 // «Удар» — не свободный источник урона: он либо добивает контратакой после
 // блока, либо ловит пульс щита. Вне этих двух окон нажатие ничего не даёт —
 // обычный урон идёт только от авто-атаки героя.
 function pressStrike() {
   if (S.paused) return;
   var now = performance.now();
+  autoTouch();
   // Защита от «дребезга» одного нажатия: на телефоне один тап иногда
   // рождает несколько pointerdown подряд (двойное срабатывание сенсора,
   // случайный повторный тач) — без этого щит внезапно ловил 2-3 «удара»
@@ -63,22 +85,7 @@ function pressStrike() {
   if (mob.shield) {
     var p = mob.pulse;
     if (p && now >= p.hitAt - dur(pulseGoodMs()) && now <= p.hitAt + dur(pulseLateMs())) {
-      hitMob(mob, 1, null, true);   // тайминг верный — щит разбит
-      // Таймер хода моба тикал всё время, пока стоял блок, и мог уже
-      // истечь — тогда моб ходил в тот же кадр и с шансом сразу снова
-      // вставал в блок: выглядело так, будто удар не прошёл / прошёл дважды.
-      // Даём полную паузу и запрещаем блок на ближайшем ходу.
-      S.mobSwingAt = Math.max(S.mobSwingAt, now + dur(TUNE.mobRate));
-      mob.noShieldNext = true;
-      if (mob.type === 'yellow' && mob.hp > 0) {
-        // Жёлтый моб: снятие щита сразу оборачивается его критом — но не
-        // мгновенно, а коротким отдельным замахом (тот же принцип, что у
-        // обычного крита): замах длится «Контрблок
-        // жёлтого» миллисекунд, и решает всё та же точная синхронизация
-        // с блоком в момент hitAt — reuse resolveCrit ничего не меняя.
-        S.telegraph = { start: now, hitAt: now + dur(TUNE.yellowCounter), mob: mob, yellowFollow: true };
-        sfx('telegraph');
-      }
+      breakShield(mob, now);
     } else {
       missShieldPulse(mob, now);
       sfx('miss');

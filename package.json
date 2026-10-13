@@ -3,8 +3,9 @@
   "private": true,
   "description": "Pack — idle RPG с активным таймингом. Игра не требует сборки: откройте index.html.",
   "scripts": {
-    "test": "node tests/smoke.mjs && node tests/save.mjs && node tests/equivalence.mjs",
+    "test": "node tests/smoke.mjs && node tests/save.mjs && node tests/auto.mjs && node tests/equivalence.mjs",
     "save": "node tests/save.mjs",
+    "auto": "node tests/auto.mjs",
     "smoke": "node tests/smoke.mjs",
     "equivalence": "node tests/equivalence.mjs",
     "sim": "node tests/sim.mjs",

@@ -14,7 +14,8 @@ var SAVE_PREFIX = 'PACK1:';
 var SAVE = {
   dirty: false,       // что-то поменялось — запишем в конце кадра
   off: false,         // перед перезагрузкой: больше ничего не писать
-  packStart: null     // память стаи на момент начала текущей стаи
+  packStart: null,    // память стаи на момент начала текущей стаи
+  loadedAt: 0         // когда было записано загруженное сохранение (для оффлайна)
 };
 
 // Миграции: MIGRATIONS[v] переводит сохранение версии v в версию v + 1.
@@ -119,7 +120,7 @@ function itemIn(o) {
            stats: stats, rolls: rolls, score: scoreStats(stats) };
 }
 
-var INFO_KINDS = { level: 1, flee: 1, retreat: 1, ack: 1, lost: 1, full: 1, broken: 1 };
+var INFO_KINDS = { level: 1, flee: 1, retreat: 1, ack: 1, lost: 1, full: 1, broken: 1, offline: 1 };
 
 // Разбирает сохранение (уже распарсенный JSON) в готовые для S значения.
 // Бросает ошибку, если сохранение не подходит целиком.
@@ -163,7 +164,8 @@ function parseSave(d) {
     var e = { kind: n.kind };
     if (n.kind === 'level') e.level = int(n.level, 1, 999, 1);
     if (n.kind === 'flee') e.resist = int(n.resist, 0, MEM_CAP, 0);
-    if (n.kind === 'retreat') e.progress = int(n.progress, -1e6, 1e6, 0);
+    if (n.kind === 'retreat') { e.progress = int(n.progress, -1e6, 1e6, 0); if (n.auto) e.auto = true; }
+    if (n.kind === 'offline') { e.ms = num(n.ms, 0, 1e9, 0); e.kills = int(n.kills, 0, 1e9, 0); e.xp = int(n.xp, 0, 1e12, 0); }
     if (n.kind === 'lost') e.count = int(n.count, 0, 1e6, 0);
     if (n.kind === 'full') { e.item = itemIn(n.item); if (!e.item) continue; }
     info.push(e);
@@ -200,7 +202,9 @@ function loadGame() {
   try { raw = localStorage.getItem(SAVE_KEY); } catch (e) { return false; }
   if (!raw) return false;
   try {
-    applySave(parseSave(JSON.parse(raw)));
+    var d = JSON.parse(raw);
+    applySave(parseSave(d));
+    SAVE.loadedAt = d && typeof d.savedAt === 'number' && isFinite(d.savedAt) ? d.savedAt : 0;
     return true;
   } catch (err) {
     // Битое сохранение не затираем молча: откладываем копию и начинаем заново.

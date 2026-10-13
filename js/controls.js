@@ -44,6 +44,7 @@ el.loot.addEventListener('click', function (e) {
 
 $('death-next').addEventListener('pointerdown', function (e) { e.preventDefault(); closeDeath(); });
 $('prompt-retreat').addEventListener('pointerdown', function (e) { e.preventDefault(); resolvePrompt('retreat'); });
+$('offline-ok').addEventListener('pointerdown', function (e) { e.preventDefault(); closeOffline(); });
 $('prompt-ack').addEventListener('pointerdown', function (e) { e.preventDefault(); resolvePrompt('ack'); });
 
 /* ── Рюкзак ──────────────────────────────────────────────────────── */

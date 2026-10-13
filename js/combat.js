@@ -194,7 +194,9 @@ function heroDies(now) {
   S.shake = 1;
   sfx('death');
   floatText('пал', 'var(--telegraph)', 0, 0, true);
-  var lost = loseUnequippedLoot();
+  // В авто-режиме смерть рюкзак не забирает, а кадр смерти закроется сам.
+  var lost = AUTO.on ? -1 : loseUnequippedLoot();
+  if (AUTO.on) AUTO.deathAt = now + AUTO_DEATH_MS;
   markSave();
   showDeath(lost);
 }
@@ -202,13 +204,15 @@ function heroDies(now) {
 // Кадр-прослойка после смерти: бой стоит, пока игрок не нажмёт «Дальше».
 function showDeath(lost) {
   el.deathText.textContent = 'Стая ' + S.packLevel + ' уровня вас одолела. ' +
-    (lost > 0 ? 'Потеряно ' + lost + ' ' + plural(lost, 'ненадетый предмет', 'ненадетых предмета', 'ненадетых предметов') + '.'
+    (lost < 0 ? 'Герой был в авто-режиме — рюкзак цел.' :
+     lost > 0 ? 'Потеряно ' + lost + ' ' + plural(lost, 'ненадетый предмет', 'ненадетых предмета', 'ненадетых предметов') + '.'
               : 'Рюкзак был пуст — всё надетое при вас.');
   el.deathOverlay.hidden = false;
 }
 function closeDeath() {
   if (S.phase !== 'dead' || el.deathOverlay.hidden) return;
   el.deathOverlay.hidden = true;
+  AUTO.deathAt = 0; updateDeathNext();
   S.phaseUntil = 0;              // step сразу продолжит: вопрос или новая стая
 }
 
@@ -268,6 +272,7 @@ function shiftTimers(d) {
 
 function openBackpack() {
   if (S.paused) return;
+  autoTouch();
   S.paused = true;
   S.pauseStart = performance.now();
   // Открыли рюкзак — всё, что там лежит, уже увидено и больше не «новое».
@@ -284,9 +289,10 @@ function closeBackpack() {
   shiftTimers(elapsed);
   S.paused = false;
   el.backpackOverlay.hidden = true;
+  autoTouch();
 }
 
-function resolvePrompt(choice) {
+function resolvePrompt(choice, auto) {
   var now = performance.now();
   hidePrompt();
   S.deathStreak = 0;
@@ -294,7 +300,7 @@ function resolvePrompt(choice) {
     S.progress = Math.max(-4, S.progress - 3);
     S.resist = Math.max(0, S.resist - 2);
     if (S.resist === 0) S.memLeft = 0;
-    pushLog({ kind: 'retreat', progress: S.progress });
+    pushLog(auto ? { kind: 'retreat', progress: S.progress, auto: true } : { kind: 'retreat', progress: S.progress });
     S.tm.retreats++;
   } else {
     pushLog({ kind: 'ack' });
@@ -311,7 +317,9 @@ function resolveCrit(now) {
 
   S.tm.crits++;
 
-  if (now < S.guardUntil) {
+  // В авто герой сам ловит часть критов — тот же блок, что и от кнопки
+  // (окно контры откроется, но жать её будет некому).
+  if (now < S.guardUntil || autoBlocks()) {
     // Заблокировано: урона нет, моб оглушён, открылось окно контратаки.
     S.tm.blocked++;
     if (S.guardPressedAt > tg.start) S.tm.react.push(S.guardPressedAt - tg.start);
@@ -358,6 +366,8 @@ function resolveRanged(mob, now) {
   mob.rangedTelegraph = null;
   var meleeClash = !!S.telegraph;
   var deflected = !meleeClash && now < S.guardUntil;
+  // Авто-блок выстрел гасит, но в моба не отбивает — это заслуга кнопки.
+  var absorbed = !deflected && autoBlocks();
   var enraged = (mob.rangedRage || 0) > 0;
   var dmg = damage(mobAtk(mob) * RANGED_FRAC * (enraged ? RANGED_RAGE_MULT : 1), S.stats.def, 1);
   mob.rangedRage = 0;               // яростный выстрел сделан — ярость прошла
@@ -387,6 +397,10 @@ function resolveRanged(mob, now) {
     S.flash = 0.4; S.flashColor = '#3fdcc4';
     sfx('block');
     floatText('ОТБИТО', '#3fdcc4', 0, 0, false);
+  } else if (absorbed) {
+    S.flash = 0.3; S.flashColor = '#3fdcc4';
+    sfx('block');
+    floatText('БЛОК', '#3fdcc4', 0, 0, false);
   } else {
     S.hp -= dmg;
     floatText('−' + dmg, '#a8748a', -1, 0, false);
@@ -423,7 +437,9 @@ function step(now) {
     if (now >= S.phaseUntil) {
       S.hp = S.stats.maxHp;
       S.pack = [];
-      if (TUNE.adapt && S.deathStreak >= 2) {
+      if (TUNE.adapt && S.deathStreak >= 2 && AUTO.on) {
+        resolvePrompt('retreat', true);   // в авто некому отвечать — отступаем сами
+      } else if (TUNE.adapt && S.deathStreak >= 2) {
         S.phase = 'prompt';
         showPrompt();
       } else {
@@ -504,6 +520,13 @@ function step(now) {
   // щит у него поднят с самого спавна) — запускаем отсчёт только теперь,
   // когда игрок реально может на него отреагировать.
   if (mob.shield && !mob.pulse) mob.pulse = { start: now, hitAt: now + dur(PULSE_LEAD) };
+
+  // В авто герой сам раскалывает щит в такт с тем же шансом, что и блок:
+  // иначе жёлтый со щитом стоит перед пассивным героем бесконечно.
+  if (mob.shield && mob.pulse && !mob.pulse.autoTried && AUTO.on && now >= mob.pulse.hitAt) {
+    mob.pulse.autoTried = true;
+    if (autoBlocks()) breakShield(mob, now);
+  }
 
   // Пульс щита не пойман вовремя — щит остаётся, моб злится, пульс заново.
   if (mob.shield && mob.pulse && now > mob.pulse.hitAt + dur(pulseLateMs())) {

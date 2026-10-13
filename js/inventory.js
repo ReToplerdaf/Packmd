@@ -86,9 +86,9 @@ function renderInfo() {
     }
     if (e.kind === 'retreat') {
       html += '<div class="drop" style="--rc:var(--ink-dim)"><div class="rail"></div>' +
-              '<div><div class="nm">Отступили к чекпоинту</div>' +
+              '<div><div class="nm">' + (e.auto ? 'Авто: отступили к чекпоинту' : 'Отступили к чекпоинту') + '</div>' +
               '<div class="slot">чекпоинт ' + e.progress + ' · дальше будет легче</div></div>' +
-              '<div class="verdict off">решение</div></div>';
+              '<div class="verdict off">' + (e.auto ? 'авто' : 'решение') + '</div></div>';
       continue;
     }
     if (e.kind === 'ack') {
@@ -103,6 +103,13 @@ function renderInfo() {
               '<div><div class="nm">Потеряно ' + e.count + ' ' + plural(e.count, 'предмет', 'предмета', 'предметов') + '</div>' +
               '<div class="slot">не успели надеть до смерти</div></div>' +
               '<div class="verdict off">смерть</div></div>';
+      continue;
+    }
+    if (e.kind === 'offline') {
+      html += '<div class="drop" style="--rc:var(--accent)"><div class="rail"></div>' +
+              '<div><div class="nm">Пока вас не было: ' + fmtDuration(e.ms) + '</div>' +
+              '<div class="slot">убито ' + e.kills + ' · опыт +' + e.xp + '</div></div>' +
+              '<div class="verdict off">оффлайн</div></div>';
       continue;
     }
     if (e.kind === 'broken') {
@@ -215,7 +222,9 @@ function renderTelem() {
       '<div class="cell"><div class="v">' + m.flees + '</div><div class="l">Сбежало</div>' +
         '<div class="h">раненых, чьих защитников не добили, память ×' + S.resist + '</div></div>' +
       '<div class="cell"><div class="v">' + m.retreats + '</div><div class="l">Отступлений</div>' +
-        '<div class="h">выбрано после 2-й смерти подряд</div></div>' +
+        '<div class="h">после 2-й смерти подряд (в авто — сами)</div></div>' +
+      '<div class="cell"><div class="v">' + Math.round(AUTO.ms / 60000) + ' мин</div><div class="l">В авто</div>' +
+        '<div class="h">сам поймал ' + AUTO.blocks + ' раз (блок, щит)</div></div>' +
       '<div class="verdict-line">' + verdict + '</div>' +
     '</div>';
 }

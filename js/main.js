@@ -10,6 +10,7 @@ function frame(t) {
   var dt = prev ? Math.min(64, t - prev) : 16;
   prev = t;
 
+  autoTick(t, dt);
   if (!S.paused) {
     var adt = dt * (TUNE.speed || 1);
     if (S.phase === 'walk') walkOffset += adt * 0.11;
@@ -27,6 +28,7 @@ function frame(t) {
 function start(restored) {
   recalc();
   var loaded = loadGame();               // сохранённый прогресс, если есть
+  AUTO.lastInput = performance.now();
   if (!loaded) S.hp = S.stats.maxHp;
   S.phase = 'walk';
   S.phaseUntil = performance.now() + dur(700);
@@ -34,6 +36,7 @@ function start(restored) {
   // Закрыли вкладку на вопросе после 2-й смерти подряд — задаём его снова.
   if (loaded && TUNE.adapt && S.deathStreak >= 2) { S.phase = 'prompt'; showPrompt(); }
   if (!tutDone() || /[?&]tutorial\b/.test(location.search)) startTutorial();   // первый запуск — сразу обучение
+  if (loaded) offlineSince(SAVE.loadedAt);  // опыт и лут за время отсутствия
   renderLoot(); renderGear(); renderTelem();
   requestAnimationFrame(frame);
 }

@@ -16,6 +16,7 @@
       <div class="n" id="lvl">1</div>
       <div class="kills" id="pack-lvl" hidden>стая <b id="pack-lvl-n">1</b></div>
       <span id="st-kills" hidden>0</span>
+      <div class="kills auto-tag" id="auto-tag" hidden>авто</div>
     </div>
 
     <!-- Номер чекпоинта — бейдж в верхнем левом углу, как уровень справа -->
@@ -157,6 +158,14 @@
               <label for="s-packmax">Макс. размер стаи (для теста)</label><output id="o-packmax">5</output>
               <input type="range" id="s-packmax" min="2" max="10" step="1" value="5">
             </div>
+            <div class="tune-row">
+              <label for="s-autoafter">Авто-режим через (0 — выключен)</label><output id="o-autoafter">15 с</output>
+              <input type="range" id="s-autoafter" min="0" max="60000" step="5000" value="15000">
+            </div>
+            <div class="tune-row">
+              <label for="s-autoblock">Авто-блок критов и выстрелов</label><output id="o-autoblock">35 %</output>
+              <input type="range" id="s-autoblock" min="0" max="80" step="5" value="35">
+            </div>
             <div class="toggles">
               <label><input type="checkbox" id="c-sound" checked> Звук</label>
               <label><input type="checkbox" id="c-debug"> Показать тайминги</label>
@@ -271,6 +280,16 @@
     </div>
   </div>
 
+  <div class="prompt-overlay" id="offline-overlay" hidden>
+    <div class="prompt-card">
+      <div class="prompt-h offline-h">Пока вас не было</div>
+      <p class="prompt-p" id="offline-text"></p>
+      <div class="prompt-actions">
+        <button type="button" class="prompt-btn" id="offline-ok">Забрать</button>
+      </div>
+    </div>
+  </div>
+
   <div class="prompt-overlay" id="prompt-overlay" hidden>
     <div class="prompt-card">
       <div class="prompt-h">Второй раз подряд</div>
@@ -300,6 +319,7 @@
 <script src="js/inventory.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/save.js"></script>
+<script src="js/auto.js"></script>
 <script src="js/controls.js"></script>
 <script src="js/main.js"></script>
 

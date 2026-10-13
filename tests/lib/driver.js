@@ -77,6 +77,8 @@
     var S = P.S, T = P.TUNE;
     if (visible('tut-overlay')) { document.getElementById('tut-ok').click(); return; }
     // Кадр смерти: «Дальше» — через ту же паузу (1,6 с ÷ speed), что раньше длилась пауза смерти.
+    // noDeathTap — бот не трогает кадр смерти и вопрос (проверка авто-режима).
+    if (b.noDeathTap && (visible('death-overlay') || visible('prompt-overlay'))) return;
     if (visible('death-overlay')) {
       if (!b._deadAt) b._deadAt = now;
       if (now - b._deadAt >= P.dur(1600)) { b._deadAt = 0; tap(document.getElementById('death-next')); }
