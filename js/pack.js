@@ -54,7 +54,7 @@ function spawnPack(now) {
   var regulars = [], healers = 0;
   for (var i = 0; i < regularCount; i++) {
     var ms = mobStats(S.packLevel, false);
-    var type = rollMobType(healers >= MAX_HEALERS);
+    var type = biomeMobType(rollMobType(healers >= MAX_HEALERS));
     if (type === 'healer') healers++;
     var m = {
       maxHp: ms.maxHp, hp: ms.maxHp, atk: ms.atk, xp: ms.xp,
@@ -69,6 +69,7 @@ function spawnPack(now) {
       // хоть контры, хоть отражённого блоком выстрела.
       m.maxHp = 1; m.hp = 1;
     }
+    if (type === 'bat') { m.maxHp = m.hp = Math.max(1, Math.round(m.maxHp * BAT_HP)); m.atk = Math.max(1, Math.round(m.atk * BAT_ATK)); }
     if (type === 'ranged') m.rangedSwingAt = now + dur(TUNE.rangedInterval * rr(0.6, 1.3));
     if (type === 'healer') m.healSwingAt = now;   // готов сразу: первый каст — как только переднего ранят
     if (type === 'yellow') {

@@ -19,6 +19,8 @@ function drawMob(m, x, gy, t, isFront) {
   ctx.fillStyle = 'rgba(0,0,0,.42)';
   ctx.beginPath(); ctx.ellipse(0, 2, 15 * s, 4 * s, 0, 0, 6.2832); ctx.fill();
 
+  if (m.type === 'bat') { drawBat(m, s, hgt, t, tg, tp, stagger, flashHurt); ctx.restore(); drawMobHp(m, x, gy, s, isFront); return; }
+
   // Крит больше не подсвечивается свечением тела — его читают по мечу:
   // замах вверх, вспышка красным в верхней точке, удар вниз (см. ниже).
   var hk = 0;
@@ -419,7 +421,14 @@ function drawMob(m, x, gy, t, isFront) {
   }
   ctx.restore();
 
-  // полоска здоровья
+  drawMobHp(m, x, gy, s, isFront);
+
+  // Кольца у Хилера больше нет — канал лечения читается по дрожи посоха
+  // и вспышке сферы (см. отрисовку посоха выше).
+}
+
+// Полоска здоровья — ровно под ногами моба.
+function drawMobHp(m, x, gy, s, isFront) {
   if (isFront || m.hp < m.maxHp) {
     var bw = 34 * s, frac = Math.max(0, m.hp / m.maxHp);
     // ровно под ногами моба, под тенью — не мешает коронам и мечу сверху
@@ -429,8 +438,52 @@ function drawMob(m, x, gy, t, isFront) {
     ctx.fillStyle = m.leader ? '#ff9130' : '#d8563f';
     ctx.fillRect(x - bw / 2, barY, bw * frac, 4);
   }
+}
 
-  // Кольца у Хилера больше нет — канал лечения читается по дрожи посоха
-  // и вспышке сферы (см. отрисовку посоха выше).
-
+// Летучая мышь: висит в воздухе, машет крыльями. Перед укусом крылья
+// поднимаются и замирают, глаза разгораются красным; укусов два подряд.
+function drawBat(m, s, hgt, t, tg, tp, stagger, flashHurt) {
+  var rage = m.rage || 0;
+  var body = flashHurt ? '#ffffff' : (stagger ? '#4a3a58' : (rage > 0 ? '#8a3a6a' : (m.vulnMult > 1 ? '#7a4a6a' : '#5b3f7a')));
+  var hover = -hgt * 0.75 + Math.sin(t / 160 + m.wob) * 3 * s;
+  var flap = tg ? (0.9 + 0.1 * Math.sin(t / 30)) * Math.min(1, tp * 1.6) : Math.sin(t / 85 + m.wob);
+  var lunge = tg && tp > 0.85 ? (tp - 0.85) / 0.15 : 0;
+  ctx.save();
+  ctx.translate(0, hover + lunge * 10 * s);
+  ctx.scale(1 + lunge * 0.25, 1 + lunge * 0.25);
+  // крылья
+  ctx.fillStyle = flashHurt ? '#ffffff' : '#3a2850';
+  for (var side = -1; side <= 1; side += 2) {
+    var up = flap * 0.9;
+    ctx.save();
+    ctx.scale(side, 1);
+    ctx.rotate(-up * 0.6);
+    ctx.beginPath();
+    ctx.moveTo(4 * s, -hgt * 0.32);
+    ctx.lineTo(30 * s, -hgt * 0.62);
+    ctx.lineTo(26 * s, -hgt * 0.30);
+    ctx.lineTo(20 * s, -hgt * 0.38);
+    ctx.lineTo(16 * s, -hgt * 0.20);
+    ctx.lineTo(10 * s, -hgt * 0.28);
+    ctx.lineTo(4 * s, -hgt * 0.12);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  // тело и уши
+  ctx.fillStyle = body;
+  ctx.beginPath(); ctx.ellipse(0, -hgt * 0.26, 8 * s, 11 * s, 0, 0, 6.2832); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-6 * s, -hgt * 0.42); ctx.lineTo(-5 * s, -hgt * 0.62); ctx.lineTo(-1 * s, -hgt * 0.46); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(6 * s, -hgt * 0.42); ctx.lineTo(5 * s, -hgt * 0.62); ctx.lineTo(1 * s, -hgt * 0.46); ctx.closePath(); ctx.fill();
+  // глаза: тёмные, перед укусом разгораются
+  var glow = tg ? Math.min(1, tp * 1.2) : 0;
+  if (glow > 0) { ctx.shadowColor = '#ff2a1a'; ctx.shadowBlur = 10 * s * glow; }
+  ctx.fillStyle = glow > 0 ? 'rgba(255,' + Math.round(200 - 160 * glow) + ',60,1)' : '#1a0f14';
+  ctx.beginPath(); ctx.arc(-3 * s, -hgt * 0.32, 1.7 * s, 0, 6.2832); ctx.fill();
+  ctx.beginPath(); ctx.arc(3 * s, -hgt * 0.32, 1.7 * s, 0, 6.2832); ctx.fill();
+  ctx.shadowBlur = 0;
+  // клыки
+  ctx.fillStyle = '#eee';
+  ctx.beginPath(); ctx.moveTo(-2.5 * s, -hgt * 0.2); ctx.lineTo(-1.5 * s, -hgt * 0.13); ctx.lineTo(-0.6 * s, -hgt * 0.2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(2.5 * s, -hgt * 0.2); ctx.lineTo(1.5 * s, -hgt * 0.13); ctx.lineTo(0.6 * s, -hgt * 0.2); ctx.fill();
+  ctx.restore();
 }

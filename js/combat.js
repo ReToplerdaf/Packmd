@@ -604,7 +604,7 @@ function step(now) {
     mob.noShieldNext = false;
     // Красный (обычный) моб сам в блок не встаёт — только когда прикрывает
     // раненого (см. retreatBehindProtector). Случайный щит — лишь у жёлтого.
-    if (TUNE.adapt && canShield && (mob.type !== 'normal' || mob.chiefPhase === 2) && rnd() < TUNE.shieldRate) {
+    if (TUNE.adapt && canShield && (mob.type === 'yellow' || mob.chiefPhase === 2) && rnd() < TUNE.shieldRate) {
       mob.shield = true;
       mob.pulse = { start: now, hitAt: now + dur(PULSE_LEAD) };
       S.flash = 0.4; S.flashColor = '#4a9fe8';
@@ -612,6 +612,7 @@ function step(now) {
       floatText('ЩИТ', '#4a9fe8', 0, 0, false);
     } else if (rnd() < TUNE.critRate) {
       S.telegraph = { start: now, hitAt: now + dur(biomeLead() * chiefLeadMult(mob)), mob: mob };
+      if (mob.type === 'bat') S.telegraph.first = true;   // летучая мышь: двойной укус
       sfx('telegraph');
     } else {
       mobNormalHit(now, mob);

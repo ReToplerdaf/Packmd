@@ -94,6 +94,36 @@ const state = page => page.evaluate(() => ({
   await g.close();
 }
 
+// Летучая мышь: только с Пещеры, двойной укус, контра после второго блока.
+{
+  const g = await openGame(browser, file, { seed: 9, tune: { biomeMobRate: 1 } });
+  await run(g.page, 200, { bot: { skill: 1 } });
+  const none = await g.page.evaluate(() => S.pack.every(m => m.type !== 'bat'));
+  check('в Русле реки летучих мышей нет', none);
+  let pk = [];
+  for (let i = 0; i < 10 && !pk.includes('bat'); i++) { await toPack(g.page, 10); pk = await g.page.evaluate(() => S.pack.map(m => m.leader ? 'leader' : m.type)); }
+  const roll = await g.page.evaluate(() => biomeMobType('normal') + ',' + biomeMobType('yellow'));
+  check('в Пещере обычных заменяют летучие мыши', pk.includes('bat') && !pk.includes('normal') && roll === 'bat,yellow', [pk, roll]);
+  await g.page.evaluate(() => { var b = S.pack.filter(m => m.type === 'bat')[0]; S.pack.splice(S.pack.indexOf(b), 1); S.pack.unshift(b); b.vx = null; S.telegraph = null; });
+  const bite = await g.page.evaluate(() => {
+    var b = front(); if (!b || b.type !== 'bat') return { skip: true };
+    var now = performance.now(), r = {};
+    S.telegraph = { start: now, hitAt: now + 10, mob: b, first: true };
+    S.guardUntil = now + 20; resolveCrit(now + 10);
+    r.noCounter = S.counterUntil < now; r.second = !!(S.telegraph && !S.telegraph.first && S.telegraph.mob === b);
+    S.guardUntil = S.telegraph.hitAt + 1; resolveCrit(S.telegraph.hitAt);
+    r.counter = S.counterUntil > now; return r;
+  });
+  check('двойной укус: контра только после второго блока', bite.noCounter && bite.second && bite.counter, bite);
+  await g.page.evaluate(() => { var b = front(); S.telegraph = { start: performance.now(), hitAt: performance.now() + 1e5, mob: b, first: true }; });
+  await run(g.page, 20, {});
+  await g.page.screenshot({ path: path.join(OUT, 'bat.png') });
+  await g.page.evaluate(() => { S.telegraph = null; });
+  await run(g.page, 1200, { bot: { skill: 0.7 } });
+  check('нет ошибок в консоли (летучая мышь)', g.errors.length === 0, g.errors);
+  await g.close();
+}
+
 // Выключенные биомы — всё как раньше.
 {
   const g = await openGame(browser, file, { seed: 5, tune: { biomes: false } });

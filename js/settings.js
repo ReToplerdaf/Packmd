@@ -50,6 +50,7 @@ bindSlider('s-fatigue','o-fatigue','fatigueWindow', function (v) { return v + ' 
 bindSlider('s-packmin','o-packmin','packMin', function (v) { return v; });
 bindSlider('s-packmax','o-packmax','packMax', function (v) { return v; });
 bindSlider('s-bossevery','o-bossevery','bossEvery', function (v) { return v; });
+bindSlider('s-biomemob','o-biomemob','biomeMobRate', function (v) { return v + ' %'; }, 100);
 bindSlider('s-autoafter','o-autoafter','autoAfter', function (v) { return v ? (v / 1000) + ' с' : 'выкл'; });
 bindSlider('s-autoblock','o-autoblock','autoBlock', function (v) { return v + ' %'; }, 100);
 
