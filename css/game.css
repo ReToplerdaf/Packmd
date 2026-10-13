@@ -1,0 +1,580 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  /* Палитра холодная и приглушённая нарочно: вспышка крита — единственное
+     тёплое насыщенное пятно на экране, поэтому её невозможно не заметить. */
+  --ground:    #131620;
+  --surface:   #1b1f2c;
+  --raised:    #232838;
+  --line:      #2f3547;
+  --line-soft: #252a39;
+  --ink:       #e8eaf2;
+  --ink-dim:   #878fa6;
+  --ink-faint: #5c6478;
+
+  --accent:    #c9954a;
+  --accent-dim:#8a6630;
+
+  --telegraph: #ff4d34;
+  --guard:     #3fdcc4;
+  --hp:        #d8563f;
+  --xp:        #6f7fe0;
+
+  --r-common:    #7a8296;
+  --r-uncommon:  #5cb85c;
+  --r-rare:      #4a9fe8;
+  --r-epic:      #b06fe8;
+  --r-legendary: #ff9130;
+
+  --font-ui: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+}
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+.app {
+  height: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ─── Арена: вид от первого лица во весь экран ──────────────────── */
+
+.arena-wrap {
+  position: absolute; inset: 0;
+  background: #0e1119;
+  overflow: hidden;
+}
+#arena { display: block; width: 100%; height: 100%; }
+
+.banner {
+  position: absolute; left: 50%; top: 14px;
+  transform: translateX(-50%);
+  max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-faint);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ─── Уровень противника (верхний правый угол) ──────────────────── */
+
+.hud-level {
+  position: absolute; top: 16px; right: 16px; z-index: 2;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(10,12,18,.62);
+  border: 1px solid rgba(255,255,255,.08);
+  text-align: center;
+  pointer-events: none;
+}
+.hud-level .k {
+  font-size: 8px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-faint);
+}
+.hud-level .n {
+  font-family: var(--font-num); font-size: 16px; font-weight: 700;
+  color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums;
+}
+.hud-level.hud-cp { right: auto; left: 16px; overflow: hidden; }
+.hud-level.hud-cp > :not(.cp-stack) { position: relative; z-index: 1; }
+/* Шкала забывания памяти — 3 кубика друг на друге фоном бейджа:
+   сколько стай (включая текущую) память ещё продержится. */
+.cp-stack { position: absolute; inset: 0; display: flex; flex-direction: column-reverse; gap: 2px; padding: 2px; }
+.cp-stack i { flex: 1 1 0; border-radius: 3px; background: transparent; transition: background .25s; }
+/* сколько кубиков горит — уровень памяти; цвет — сколько стай до забывания:
+   красный 3, жёлтый 2, зелёный 1 */
+.cp-stack i.on { background: rgba(235,60,45,.55); }            /* нижние — всегда красные */
+.cp-stack.t2 i.on.top { background: rgba(240,190,40,.50); }      /* откат — только верхний */
+.cp-stack.t1 i.on.top { background: rgba(70,190,95,.50); }
+.hud-level .kills {
+  font-size: 9px; color: var(--ink-faint); margin-top: 3px;
+  font-family: var(--font-num); font-variant-numeric: tabular-nums;
+}
+
+/* ─── Здоровье и опыт: полосы во всю ширину, у самого низа ──────── */
+
+.vitals-bottom {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+  padding: 10px 18px 14px;
+  background: linear-gradient(180deg, rgba(9,11,17,0) 0%, rgba(9,11,17,.92) 38%, #090b11 100%);
+}
+
+.bar {
+  position: relative;
+  height: 11px;
+  background: var(--line-soft);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.bar:last-child { margin-bottom: 0; }
+.bar > .fill {
+  position: absolute; inset: 0 auto 0 0;
+  width: 0%;
+  transition: width .18s linear;
+}
+.bar.hp  > .fill { background: linear-gradient(180deg, #e6664c, var(--hp)); }
+.bar.xp  > .fill { background: linear-gradient(180deg, #8592e8, var(--xp)); }
+.bar > .cap {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding-inline: 7px;
+  font-family: var(--font-num);
+  font-size: 10px; font-variant-numeric: tabular-nums;
+  color: var(--ink); text-shadow: 0 1px 2px rgba(0,0,0,.85);
+  letter-spacing: .02em;
+}
+.bar > .cap .lbl { color: rgba(255,255,255,.72); letter-spacing: .12em; text-transform: uppercase; font-size: 9px; font-family: var(--font-ui); }
+
+/* ─── Кнопки: щит и удар — скруглённые зоны по углам экрана ──────── */
+
+.footer-wedges {
+  position: absolute; left: 0; right: 0; bottom: 56px; z-index: 2;
+  height: min(200px, 46vw);
+  pointer-events: none;
+}
+
+.wedge {
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  appearance: none;
+  position: absolute; bottom: 0;
+  width: min(200px, 46vw); height: min(200px, 46vw);
+  border: 0; padding: 0;
+  cursor: pointer;
+  display: block;
+  overflow: hidden;
+  font-family: var(--font-ui);
+  transition: filter .06s linear, transform .06s ease-out;
+}
+.wedge:active { transform: translateY(1px); }
+.wedge:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+
+.wedge-shield {
+  left: 0; border-top-right-radius: 100%;
+  background: radial-gradient(circle at 28% 72%, #6cae7e 0%, #4a7f5c 55%, #3a6349 100%);
+}
+.wedge-strike {
+  right: 0; border-top-left-radius: 100%;
+  background: radial-gradient(circle at 72% 72%, #ba9552 0%, #92723a 55%, #76592c 100%);
+}
+
+.wedge-icon {
+  position: absolute; top: 50%; left: 34%; transform: translate(-50%, -50%);
+  width: 32%; height: auto;
+  pointer-events: none;
+}
+.wedge-strike .wedge-icon { left: 66%; }
+
+.wedge-label {
+  position: absolute; bottom: 16px; left: 22px;
+  font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: #132b1b;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.wedge-strike .wedge-label { left: auto; right: 22px; color: #2c2008; }
+
+/* Служебные подписи состояния на кнопках («350 мс», «ждёт блока»…) скрыты:
+   элементы остаются, их по-прежнему обновляет hud(), но на экран не идут. */
+.wedge-state {
+  display: none !important;
+  position: absolute; top: 14%; left: 14px;
+  font-size: 9px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: rgba(19,43,27,.72);
+  font-family: var(--font-num); font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.wedge-strike .wedge-state { left: auto; right: 14px; color: rgba(44,32,8,.72); }
+
+#btn-guard.armed  { filter: brightness(1.28) saturate(1.15); }
+#btn-guard.cool   { filter: brightness(.62) saturate(.7); }
+#btn-strike.window { filter: brightness(1.3) saturate(1.2); }
+
+/* маленькие полоски-метры больше не показываем — их заменила подсветка кнопок */
+.wedge .meter {
+  display: none !important;
+  position: absolute; left: 0; bottom: 0; height: 4px; width: 0%;
+  background: rgba(255,255,255,.75);
+}
+
+/* Подсветка-подсказка «жми эту кнопку».
+   --cue 0…1 — насколько близко момент: кнопка разгорается.
+   .cue-now — сейчас самое время: яркая пульсирующая вспышка.
+   Щит (надо блокировать) — красным, удар (надо бить) — золотым. */
+.wedge::after {
+  content: ''; position: absolute; inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: calc(var(--cue, 0) * .55);
+  transition: opacity .05s linear;
+}
+.wedge-shield::after {
+  background: radial-gradient(circle at 30% 70%, rgba(255,90,60,.95) 0%, rgba(255,60,40,.55) 45%, rgba(255,40,30,0) 85%);
+  box-shadow: inset 0 0 0 3px rgba(255,90,60,.9);
+}
+.wedge-strike::after {
+  background: radial-gradient(circle at 70% 70%, rgba(255,226,110,.95) 0%, rgba(255,200,60,.55) 45%, rgba(255,190,40,0) 85%);
+  box-shadow: inset 0 0 0 3px rgba(255,220,100,.95);
+}
+.wedge.cue-now::after {
+  opacity: .95;
+  animation: cueNow .16s ease-in-out infinite alternate;
+}
+@keyframes cueNow { from { filter: brightness(1); } to { filter: brightness(1.45); } }
+@media (prefers-reduced-motion: reduce) { .wedge.cue-now::after { animation: none; } }
+
+/* ─── Кнопка рюкзака: маленький холмик по центру ─────────────────── */
+
+.wedge-bag {
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  appearance: none;
+  position: absolute; left: 50%; bottom: -2px; z-index: 3;
+  transform: translateX(-50%);
+  width: min(112px, 28vw); height: min(90px, 23vw);
+  border: 0; padding: 0;
+  border-radius: 50% 50% 0 0;
+  background: radial-gradient(circle at 50% 20%, #d98b78, #b85c48);
+  box-shadow: 0 -4px 14px rgba(0,0,0,.35);
+  cursor: pointer;
+  display: flex; align-items: flex-start; justify-content: center; padding-top: 28px;
+  transition: transform .06s ease-out;
+}
+.wedge-bag:active { transform: translateX(-50%) translateY(1px); }
+.wedge-bag .icon { width: 30px; height: auto; pointer-events: none; }
+.wedge-bag .bag-badge {
+  display: none !important;
+  position: absolute; top: -6px; right: 8px;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent); color: #1a1408;
+  font-family: var(--font-num); font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+.wedge-bag.lit { animation: bagGlow 1.1s ease-in-out infinite; }
+.wedge-bag.healed { animation: bagHeal 1.1s ease-out 1; }
+@keyframes bagHeal {
+  0%   { box-shadow: 0 -4px 14px rgba(0,0,0,.35), 0 0 6px 2px rgba(124,236,140,.9); filter: brightness(1.15) hue-rotate(80deg) saturate(1.4); }
+  25%  { box-shadow: 0 -4px 14px rgba(0,0,0,.35), 0 0 34px 14px rgba(124,236,140,.85); filter: brightness(1.35) hue-rotate(80deg) saturate(1.5); }
+  100% { box-shadow: 0 -4px 14px rgba(0,0,0,.35), 0 0 0 0 rgba(124,236,140,0); filter: none; }
+}
+@keyframes bagGlow {
+  0%, 100% { box-shadow: 0 -4px 14px rgba(0,0,0,.35), 0 0 4px 0 rgba(255,196,110,.25); filter: brightness(1); }
+  50%      { box-shadow: 0 -4px 14px rgba(0,0,0,.35), 0 0 22px 8px rgba(255,196,110,.85); filter: brightness(1.25); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wedge-bag.lit { animation: none; }
+}
+
+/* ─── Панели ─────────────────────────────────────────────────────── */
+
+.panel {
+  flex: 1 1 auto;
+  display: flex; flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.tabs {
+  flex: 0 0 auto;
+  display: flex;
+  border-bottom: 1px solid var(--line);
+}
+.tabs button {
+  flex: 1 1 0;
+  appearance: none; border: 0; background: transparent;
+  padding: 9px 4px 8px;
+  font-family: var(--font-ui);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-faint);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  touch-action: manipulation;
+}
+.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.tab-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 148px;
+  padding: 10px 12px 12px;
+}
+
+/* лут */
+.drop {
+  display: grid;
+  grid-template-columns: 3px 1fr auto auto;
+  gap: 0 9px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.drop:last-child { border-bottom: 0; }
+.drop .rail { background: var(--rc, var(--r-common)); border-radius: 2px; }
+.drop .nm { font-size: 12.5px; font-weight: 600; color: var(--rc, var(--r-common)); line-height: 1.25; }
+.drop .slot { font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); }
+.drop .affixes { margin-top: 3px; display: flex; flex-direction: column; gap: 1px; }
+.drop .af {
+  font-family: var(--font-num); font-size: 10.5px;
+  color: var(--ink-dim); font-variant-numeric: tabular-nums;
+}
+.drop .af b { color: var(--ink); font-weight: 600; }
+.drop .af .range { color: var(--ink-faint); }
+.drop .af.sig b { color: var(--guard); }
+.drop .verdict {
+  align-self: start;
+  font-size: 9px; letter-spacing: .08em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 2px; white-space: nowrap;
+}
+.drop .verdict.on  { color: #0f1a16; background: var(--guard); font-weight: 700; }
+.drop .verdict.off { color: var(--ink-faint); border: 1px solid var(--line); }
+button.drop-verdict, .drop button.verdict {
+  appearance: none; -webkit-appearance: none; font: inherit; letter-spacing: .08em;
+  touch-action: manipulation;
+}
+.drop button.verdict.off { cursor: pointer; color: var(--accent); border-color: var(--accent-dim); }
+.drop button.verdict.off:active { background: var(--accent-soft, var(--line-soft)); }
+.drop-del {
+  appearance: none; -webkit-appearance: none; touch-action: manipulation;
+  align-self: start;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: 3px;
+  background: transparent; color: var(--ink-faint);
+  font-family: var(--font-ui); font-size: 13px; line-height: 1;
+  cursor: pointer;
+}
+.drop-del:active { background: rgba(255,77,52,.16); border-color: var(--telegraph); color: var(--telegraph); }
+
+/* выбор предмета для сравнения */
+.drop.pickable { cursor: pointer; border-radius: 4px; -webkit-tap-highlight-color: transparent; }
+.drop.sel { background: rgba(201,149,74,.12); box-shadow: inset 0 0 0 1px var(--accent-dim); padding-inline: 6px; margin-inline: -6px; }
+
+/* верхняя карточка рюкзака: характеристики героя / надетое в ячейку */
+.top-card {
+  border: 1px solid var(--line); border-radius: 6px;
+  background: var(--raised);
+  padding: 9px 10px 10px; margin-bottom: 8px;
+  border-left: 3px solid var(--rc, var(--accent-dim));
+  /* прилипает к верху списка — не уезжает при прокрутке лута */
+  position: sticky; top: -10px; z-index: 2;
+  box-shadow: 0 6px 10px -4px rgba(0,0,0,.55);
+}
+.top-card[data-unsel] { cursor: pointer; }
+.top-card .tc-head {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+.top-card .tc-hint { font-size: 9px; letter-spacing: .02em; text-transform: none; color: var(--ink-faint); }
+.top-card .tc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 14px; }
+.top-card .tc-stat { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-dim); }
+.top-card .tc-stat b { font-family: var(--font-num); color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.top-card .tc-empty { font-size: 13px; color: var(--ink-faint); font-style: italic; padding: 4px 0; }
+.top-card .nm { font-size: 12.5px; font-weight: 600; color: var(--rc, var(--ink)); }
+.top-card .slot { font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); }
+.top-card .affixes { margin-top: 3px; display: flex; flex-direction: column; gap: 1px; }
+.top-card .af { font-family: var(--font-num); font-size: 10.5px; color: var(--ink-dim); }
+.top-card .af b { color: var(--ink); font-weight: 600; }
+.top-card .af .range { color: var(--ink-faint); }
+
+/* ─── Оверлей вопроса после 2-й смерти подряд ───────────────────────── */
+
+.prompt-overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(6,8,13,.72);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.prompt-card {
+  width: 100%; max-width: 320px;
+  background: var(--surface);
+  border: 1px solid var(--accent-dim);
+  border-radius: 6px;
+  padding: 18px 18px 16px;
+  text-align: center;
+}
+.prompt-h {
+  font-family: var(--font-ui); font-weight: 700;
+  font-size: 13px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--telegraph); margin-bottom: 8px;
+}
+.prompt-p { font-size: 13px; color: var(--ink-dim); line-height: 1.5; margin: 0 0 16px; }
+.prompt-actions { display: flex; flex-direction: column; gap: 8px; }
+.prompt-btn {
+  appearance: none; -webkit-appearance: none; touch-action: manipulation;
+  border: 1px solid var(--accent); border-radius: 4px;
+  background: var(--accent); color: #1a1408;
+  font-family: var(--font-ui); font-weight: 700; font-size: 12.5px;
+  letter-spacing: .06em; padding: 11px 10px; cursor: pointer;
+}
+.prompt-btn.alt { background: transparent; color: var(--ink); border-color: var(--line); }
+.prompt-btn:active { transform: translateY(1px); }
+
+/* ─── Обучение: карточка про моба, вышедшего вперёд ─────────────────── */
+
+.tut-overlay { background: rgba(6,8,13,.38); align-items: flex-end; padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); }
+.tut-card { max-width: 360px; text-align: left; padding: 14px 16px 14px; }
+.tut-card .prompt-h { color: var(--accent); }
+.tut-step { font-family: var(--font-num); font-size: 10px; letter-spacing: .1em; color: var(--ink-faint); margin-bottom: 4px; }
+.tut-card .prompt-p { margin-bottom: 12px; font-size: 12.5px; line-height: 1.42; }
+.tut-card .prompt-actions { flex-direction: row; }
+.tut-card .prompt-actions .prompt-btn { flex: 1; }
+.tut-card .prompt-p ul { margin: 6px 0 0; padding-left: 18px; }
+.tut-card .prompt-p li { margin: 3px 0; }
+.tut-card .prompt-p b { color: var(--ink); }
+.tut-start { width: 100%; margin-bottom: 4px; }
+
+/* экипировка */
+.gear-row {
+  display: grid; grid-template-columns: 74px 1fr auto;
+  gap: 9px; align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.gear-row:last-child { border-bottom: 0; }
+.gear-row .s { font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); }
+.gear-row .n { font-size: 12px; font-weight: 600; color: var(--rc, var(--ink-faint)); }
+.gear-row .p {
+  font-family: var(--font-num); font-size: 10.5px;
+  color: var(--ink-dim); font-variant-numeric: tabular-nums;
+}
+.gear-empty { color: var(--ink-faint); font-style: italic; font-size: 12px; }
+
+/* настройка */
+.tune { display: flex; flex-direction: column; gap: 11px; }
+.tune-row { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; align-items: center; }
+.tune-row label { font-size: 11px; color: var(--ink-dim); letter-spacing: .02em; }
+.tune-row output {
+  font-family: var(--font-num); font-size: 12px; font-weight: 600;
+  color: var(--accent); font-variant-numeric: tabular-nums;
+}
+.tune-row input[type="range"] {
+  grid-column: 1 / -1;
+  width: 100%; margin: 0;
+  accent-color: var(--accent);
+  touch-action: manipulation;
+}
+.tune-export { display: flex; flex-direction: column; gap: 6px; }
+.tune-export textarea {
+  width: 100%; resize: none;
+  background: var(--ground); color: var(--ink-dim);
+  border: 1px solid var(--line); border-radius: 4px;
+  font-family: var(--font-num); font-size: 10.5px; padding: 6px;
+}
+.tune-note {
+  font-size: 10.5px; color: var(--ink-faint); line-height: 1.5;
+  border-top: 1px solid var(--line-soft); padding-top: 9px;
+}
+.toggles { display: flex; flex-wrap: wrap; gap: 8px; }
+.toggles label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--ink-dim);
+  border: 1px solid var(--line); border-radius: 3px;
+  padding: 5px 9px; cursor: pointer; touch-action: manipulation;
+}
+.toggles input { accent-color: var(--accent); margin: 0; }
+
+/* статистика */
+.telem { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.telem .cell {
+  border: 1px solid var(--line); border-radius: 3px;
+  padding: 8px 10px;
+}
+.telem .cell .v {
+  font-family: var(--font-num); font-size: 19px; font-weight: 600;
+  color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.telem .cell .v.good { color: var(--guard); }
+.telem .cell .v.bad  { color: var(--telegraph); }
+.telem .cell .l {
+  font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-faint); margin-top: 3px;
+}
+.telem .cell .h { font-size: 10px; color: var(--ink-faint); margin-top: 4px; line-height: 1.4; }
+.verdict-line {
+  grid-column: 1 / -1;
+  font-size: 11.5px; line-height: 1.5;
+  padding: 9px 10px;
+  border: 1px solid var(--accent-dim);
+  border-radius: 3px;
+  color: var(--ink-dim);
+}
+.verdict-line b { color: var(--accent); font-weight: 600; }
+
+/* ─── Оверлей рюкзака: инвентарь, экип, настройка, замеры ─────────── */
+
+.backpack-overlay {
+  position: fixed; inset: 0; z-index: 40;
+  background: rgba(6,8,13,.78);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 0;
+}
+@media (min-width: 640px) {
+  .backpack-overlay { align-items: center; padding: 24px; }
+}
+.backpack-card {
+  width: 100%; max-width: 480px;
+  max-height: 88vh;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px 8px 0 0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+@media (min-width: 640px) {
+  .backpack-card { border-radius: 8px; max-height: 80vh; }
+}
+.backpack-head {
+  flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.backpack-head h2 {
+  margin: 0; font-family: var(--font-ui); font-size: 13px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--ink);
+}
+.backpack-close {
+  appearance: none; -webkit-appearance: none; touch-action: manipulation;
+  border: 1px solid var(--line); border-radius: 4px;
+  background: transparent; color: var(--ink-dim);
+  font-family: var(--font-ui); font-size: 11px; letter-spacing: .08em;
+  padding: 7px 12px; cursor: pointer;
+}
+.backpack-paused {
+  flex: 0 0 auto;
+  font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--accent); text-align: center;
+  padding: 5px; border-bottom: 1px solid var(--line-soft);
+  background: var(--raised);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: .01ms !important; }
+}
