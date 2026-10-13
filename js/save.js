@@ -72,6 +72,7 @@ function buildSave() {
     gear: gear,
     bag: bag,
     pack: { progress: S.progress, resist: resist, memLeft: memLeft, bossFled: bossFled, deathStreak: S.deathStreak },
+    combo: { best: COMBO.bestEver },
     info: info
   };
 }
@@ -182,7 +183,8 @@ function parseSave(d) {
     resist: resist,
     memLeft: resist ? int(p.memLeft, 0, MEM_PACKS, 0) : 0,
     bossFled: !!p.bossFled,
-    deathStreak: int(p.deathStreak, 0, 1000, 0)
+    deathStreak: int(p.deathStreak, 0, 1000, 0),
+    comboBest: int(d.combo && d.combo.best, 0, 1e6, 0)
   };
 }
 
@@ -191,6 +193,7 @@ function applySave(v) {
   S.gear = v.gear; S.log = v.log; S.info = v.info;
   S.progress = v.progress; S.resist = v.resist; S.memLeft = v.memLeft;
   S.bossFled = v.bossFled; S.deathStreak = v.deathStreak;
+  COMBO.bestEver = v.comboBest;
   recalc();
   S.hp = v.hp >= 1 ? Math.min(v.hp, S.stats.maxHp) : S.stats.maxHp;
   dirty.loot = true; dirty.gear = true; dirty.info = true;

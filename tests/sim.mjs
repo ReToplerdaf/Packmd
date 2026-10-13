@@ -8,6 +8,7 @@
 //   node tests/sim.mjs --profiles "активный:1,средний:0.7,пассивный:0"
 //   node tests/sim.mjs --tune '{"critRate":0.7}'   # проверить другие числа
 //   node tests/sim.mjs --no-equip              # не надевать лут
+//   node tests/sim.mjs --profiles "точный:1:0.3,неровный:0.9:0.9"   # третье число — разброс нажатия (jitter)
 //
 // Бот: с вероятностью skill реагирует на каждую угрозу (блок крита и
 // выстрела, контра, раскол щита, прерывание хилера) в середине окна.
@@ -25,7 +26,7 @@ const tune = opt('--tune', null) ? JSON.parse(opt('--tune')) : undefined;
 const equip = !args.includes('--no-equip');
 const target = path.resolve(ROOT, opt('--target', 'index.html'));
 const profiles = opt('--profiles', 'активный:1,средний:0.7,пассивный:0').split(',').map(s => {
-  const [name, skill] = s.split(':'); return { name, skill: +skill };
+  const [name, skill, jitter] = s.split(':'); return { name, skill: +skill, jitter: +(jitter || 0) };
 });
 const parallel = +opt('--parallel', 4);
 const frames = Math.round(minutes * 60 * 60);
@@ -36,7 +37,7 @@ for (const p of profiles) for (let r = 0; r < runs; r++) jobs.push({ p, seed: 10
 
 async function one(job) {
   const g = await openGame(browser, target, { seed: job.seed, tune });
-  const samples = await run(g.page, frames, { sample: 600, bot: { skill: job.p.skill, prompt: 'retreat', equip } });
+  const samples = await run(g.page, frames, { sample: 600, bot: { skill: job.p.skill, jitter: job.p.jitter, prompt: 'retreat', equip } });
   await g.close();
   if (g.errors.length) throw new Error('ошибки в игре: ' + g.errors.slice(0, 3).join('; '));
   return { profile: job.p.name, skill: job.p.skill, seed: job.seed, samples };
@@ -71,15 +72,18 @@ const rows = profiles.map(p => {
     retreatsPerHour: mean(rs.map(s => s.retreats / hours)),
     fleeShare: mean(flee), blockShare: mean(block),
     killsPerHour: mean(rs.map(s => s.kills / hours)),
+    comboBest: mean(rs.map(s => s.combo ? s.combo.best : 0)),
+    perfectShare: mean(rs.map(s => s.combo && s.combo.blocked ? s.combo.perfect / s.combo.blocked : 0)),
+    bonusShare: mean(rs.map(s => { const t = s.combo && s.combo.tierMs; const all = t ? t.reduce((a, b) => a + b, 0) : 0; return all ? (all - t[0]) / all : 0; })),
   };
 });
 
 console.log(`\nСимуляция: ${runs} прогона × ${minutes} мин игрового времени на профиль` +
   (tune ? `, настройки ${JSON.stringify(tune)}` : ', настройки по умолчанию') + (equip ? '' : ', без лута') +
   ` (${((Date.now() - t0) / 1000).toFixed(0)} с)\n`);
-console.log('профиль      skill  уровень  ур/час  стай/час  убийств/час  смертей/час  отступл/час  сбежало  блок крита');
+console.log('профиль      skill  уровень  ур/час  стай/час  убийств/час  смертей/час  отступл/час  сбежало  блок крита  серия  идеально  с бонусом');
 for (const r of rows) {
-  console.log(`${r.profile.padEnd(12)} ${fmt(r.skill, 2).padStart(5)}  ${fmt(r.level).padStart(7)}  ${fmt(r.levelsPerHour).padStart(6)}  ${fmt(r.packsPerHour).padStart(8)}  ${fmt(r.killsPerHour, 0).padStart(11)}  ${fmt(r.deathsPerHour).padStart(11)}  ${fmt(r.retreatsPerHour).padStart(11)}  ${(fmt(r.fleeShare * 100, 0) + '%').padStart(7)}  ${(fmt(r.blockShare * 100, 0) + '%').padStart(10)}`);
+  console.log(`${r.profile.padEnd(12)} ${fmt(r.skill, 2).padStart(5)}  ${fmt(r.level).padStart(7)}  ${fmt(r.levelsPerHour).padStart(6)}  ${fmt(r.packsPerHour).padStart(8)}  ${fmt(r.killsPerHour, 0).padStart(11)}  ${fmt(r.deathsPerHour).padStart(11)}  ${fmt(r.retreatsPerHour).padStart(11)}  ${(fmt(r.fleeShare * 100, 0) + '%').padStart(7)}  ${(fmt(r.blockShare * 100, 0) + '%').padStart(10)}  ${fmt(r.comboBest, 0).padStart(5)}  ${(fmt(r.perfectShare * 100, 0) + '%').padStart(8)}  ${(fmt(r.bonusShare * 100, 0) + '%').padStart(9)}`);
 }
 const base = rows.find(r => r.skill === 0);
 if (base) for (const r of rows) if (r !== base && base.levelsPerHour > 0) console.log(`  ${r.profile} растёт в ${fmt(r.levelsPerHour / base.levelsPerHour, 2)} раза быстрее пассивного`);

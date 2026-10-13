@@ -226,5 +226,6 @@ function renderTelem() {
       '<div class="cell"><div class="v">' + Math.round(AUTO.ms / 60000) + ' мин</div><div class="l">В авто</div>' +
         '<div class="h">сам поймал ' + AUTO.blocks + ' раз (блок, щит)</div></div>' +
       '<div class="verdict-line">' + verdict + '</div>' +
+      comboTelem() +
     '</div>';
 }

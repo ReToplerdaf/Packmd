@@ -17,6 +17,7 @@ var el = {
   loot: $('pane-loot'), gear: $('pane-gear'), stats: $('pane-stats'), info: $('pane-info'),
   promptOverlay: $('prompt-overlay'), promptText: $('prompt-text'),
   deathOverlay: $('death-overlay'), deathText: $('death-text'), deathNext: $('death-next'),
+  combo: $('combo'), comboMult: $('combo-mult'), comboN: $('combo-n'), comboFill: $('combo-fill'),
   autoTag: $('auto-tag'), offlineOverlay: $('offline-overlay'), offlineText: $('offline-text'),
   bagBtn: $('btn-bag'), bagBadge: $('bag-badge'),
   backpackOverlay: $('backpack-overlay'), backpackClose: $('backpack-close'),
@@ -152,6 +153,7 @@ function hud(t) {
   el.cpStack.classList.remove('t1', 't2', 't3');
   if (memLvl > 0) el.cpStack.classList.add('t' + left);
   el.cpMem.hidden = true;
+  comboHud(t);
 
   if (dirty.loot) { renderLoot(); dirty.loot = false; }
   if (dirty.gear) { renderGear(); dirty.gear = false; }

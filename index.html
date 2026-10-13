@@ -27,6 +27,13 @@
       <div class="kills" id="cp-mem" hidden>память ×<b id="cp-mem-n">0</b></div>
     </div>
 
+    <!-- Серия точных нажатий — под плашкой «стая»: ступень бонуса, счёт, полоска до следующей ступени -->
+    <div class="hud-combo" id="combo" hidden>
+      <div class="m" id="combo-mult">серия</div>
+      <div class="c" id="combo-n">0</div>
+      <div class="bar-s"><i id="combo-fill"></i></div>
+    </div>
+
     <div class="vitals-bottom">
       <div class="bar hp"><div class="fill" id="hp-fill"></div><div class="cap"><span class="lbl">Здоровье</span><span id="hp-txt">100 / 100</span></div></div>
       <div class="bar xp"><div class="fill" id="xp-fill"></div><div class="cap"><span class="lbl">Опыт</span><span id="xp-txt">0 / 60</span></div></div>
@@ -119,6 +126,10 @@
               <input type="range" id="s-pulse" min="150" max="900" step="25" value="500">
             </div>
             <div class="tune-row">
+              <label for="s-perfect">Зона «идеально» (центр окна)</label><output id="o-perfect">40 %</output>
+              <input type="range" id="s-perfect" min="10" max="100" step="5" value="40">
+            </div>
+            <div class="tune-row">
               <label for="s-healer">Доля хилеров в стае</label><output id="o-healer">12 %</output>
               <input type="range" id="s-healer" min="0" max="40" step="2" value="12">
             </div>
@@ -171,6 +182,7 @@
               <label><input type="checkbox" id="c-debug"> Показать тайминги</label>
               <label><input type="checkbox" id="c-adapt" checked> Адаптивная сложность</label>
               <label><input type="checkbox" id="c-fatigue" checked> Усталость от спама блока</label>
+              <label><input type="checkbox" id="c-combo" checked> Серия и бонус к опыту</label>
             </div>
             <div class="tune-export">
               <button type="button" class="prompt-btn" id="tune-export">Скопировать мои настройки</button>
@@ -221,6 +233,15 @@
               раненый сбежит насовсем и стая запомнит ваш урон (память). Плюс
               вопрос после двух смертей подряд без победы между ними. Выключите
               тумблер, чтобы сравнить с игрой без всего этого.
+            </p>
+            <p class="tune-note">
+              Серия: каждый блок крита, отбитый шар, раскол щита, прерванный
+              каст и контратака дают +1, а нажатие в центре окна
+              («ИДЕАЛЬНО», ровно на щелчок метронома; ширина — «Зона
+              „идеально“») — +2. С 5 подряд опыт ×1.1, с 15 — ×1.25, с 30 —
+              ×1.5. Сбрасывают серию пропущенный крит или выстрел, удар мимо
+              такта, нетронутый щит или каст, усталость и смерть. В
+              авто-режиме и в обучении серии нет.
             </p>
             <p class="tune-note">
               Смерть бьёт по рюкзаку: всё подобранное, но не надетое —
@@ -309,6 +330,7 @@
 <script src="js/pack.js"></script>
 <script src="js/tutorial.js"></script>
 <script src="js/progress.js"></script>
+<script src="js/combo.js"></script>
 <script src="js/combat.js"></script>
 <script src="js/input.js"></script>
 <script src="js/audio.js"></script>

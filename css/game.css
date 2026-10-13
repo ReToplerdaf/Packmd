@@ -101,6 +101,35 @@ body {
 .cp-stack.t1 i.on.top { background: rgba(70,190,95,.50); }
 .hud-level .kills.auto-tag { color: var(--accent); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .prompt-h.offline-h { color: var(--accent); }
+/* Серия точных нажатий — под плашкой «стая». Ступени: t1 зелёная, t2 голубая, t3 золотая. */
+.hud-combo {
+  position: absolute; top: 66px; left: 16px; z-index: 2;
+  min-width: 46px; padding: 4px 8px 5px;
+  border-radius: 8px;
+  background: rgba(10,12,18,.62);
+  border: 1px solid rgba(255,255,255,.08);
+  text-align: center;
+  pointer-events: none;
+  transition: border-color .2s, opacity .5s;
+}
+.hud-combo .m { font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); }
+.hud-combo .c { font-family: var(--font-num); font-size: 14px; font-weight: 700; line-height: 1.1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.hud-combo .bar-s { height: 3px; margin-top: 3px; border-radius: 2px; background: rgba(255,255,255,.1); overflow: hidden; }
+.hud-combo .bar-s i { display: block; height: 100%; width: 0; background: var(--ink-faint); transition: width .15s; }
+.hud-combo.t1 { border-color: rgba(124,216,138,.45); }
+.hud-combo.t1 .m, .hud-combo.t1 .c { color: #7cd88a; }
+.hud-combo.t1 .bar-s i { background: #7cd88a; }
+.hud-combo.t2 { border-color: rgba(90,180,240,.5); }
+.hud-combo.t2 .m, .hud-combo.t2 .c { color: #7cc4f4; }
+.hud-combo.t2 .bar-s i { background: #7cc4f4; }
+.hud-combo.t3 { border-color: rgba(255,210,122,.6); box-shadow: 0 0 10px rgba(255,190,80,.25); }
+.hud-combo.t3 .m, .hud-combo.t3 .c { color: #ffd27a; }
+.hud-combo.t3 .bar-s i { background: #ffd27a; }
+.hud-combo.up { animation: combo-up .6s ease-out; }
+@keyframes combo-up { 0% { transform: scale(1.35); box-shadow: 0 0 18px rgba(255,210,122,.8); } 100% { transform: scale(1); } }
+.hud-combo.broke { opacity: .35; animation: combo-broke .4s ease-out; }
+.hud-combo.broke .c { color: #ff9130; text-decoration: line-through; }
+@keyframes combo-broke { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 .hud-level .kills {
   font-size: 9px; color: var(--ink-faint); margin-top: 3px;
   font-family: var(--font-num); font-variant-numeric: tabular-nums;

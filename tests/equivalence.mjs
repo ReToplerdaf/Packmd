@@ -6,6 +6,9 @@
 //   node tests/equivalence.mjs                 # эталон — тег v0-single-file
 //   node tests/equivalence.mjs --ref <коммит>  # другой эталон
 //   node tests/equivalence.mjs --target dist/pack.html   # проверить сборку в один файл
+//   node tests/equivalence.mjs --ref <коммит> --tune '{"combo":false}' --no-ui
+//       # новая механика выключена: бой и картинка должны совпасть с версией
+//       # до неё; текст интерфейса (новые пункты «Настройки») не сравнивается
 import path from 'node:path';
 import { launch, openGame, run, checkoutRef, ROOT } from './lib/harness.mjs';
 
@@ -14,6 +17,8 @@ const opt = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[
 const ref = opt('--ref', 'v0-single-file');
 const target = path.resolve(ROOT, opt('--target', 'index.html'));
 const quick = args.includes('--quick');
+const extraTune = opt('--tune', null) ? JSON.parse(opt('--tune')) : null;
+const noUi = args.includes('--no-ui');
 
 const ui = {
   3000: 'open', 3010: 'tab:tab-loot', 3020: 'select', 3030: 'equip', 3040: 'tab:tab-gear',
@@ -35,6 +40,8 @@ const scenarios = [
   { name: 'скорость ×3 (как в ревью)', cfg: { seed: 5, tune: { speed: 1.5 } }, frames: 20000 * F, bot: { skill: 0.9 } },
 ];
 
+if (extraTune) for (const sc of scenarios) sc.cfg.tune = Object.assign({}, sc.cfg.tune, extraTune);
+
 const browser = await launch();
 const refPath = checkoutRef(ref);
 let failed = 0;
@@ -51,7 +58,7 @@ for (const sc of scenarios) {
   let diff = null;
   for (let i = 0; i < Math.max(a.trace.length, b.trace.length); i++) {
     const x = a.trace[i] || {}, y = b.trace[i] || {};
-    for (const k of ['s', 'ui', 'cv']) if (x[k] !== y[k]) { diff = { frame: x.f ?? y.f, what: k }; break; }
+    for (const k of noUi ? ['s', 'cv'] : ['s', 'ui', 'cv']) if (x[k] !== y[k]) { diff = { frame: x.f ?? y.f, what: k }; break; }
     if (diff) break;
   }
   const ok = !diff && !b.errors.length && JSON.stringify(a.sum) === JSON.stringify(b.sum);

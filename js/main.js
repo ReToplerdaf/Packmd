@@ -11,6 +11,7 @@ function frame(t) {
   prev = t;
 
   autoTick(t, dt);
+  comboTick(t, dt);
   if (!S.paused) {
     var adt = dt * (TUNE.speed || 1);
     if (S.phase === 'walk') walkOffset += adt * 0.11;

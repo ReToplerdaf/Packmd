@@ -72,6 +72,15 @@
   }
   var done = new WeakSet();
   var lastCounter = null;
+  // jitter — разброс нажатия вокруг середины окна, доля полуширины окна
+  // (0 — всегда ровно в середину, 1 — где угодно в окне). Бросается один раз
+  // на угрозу. Без jitter бот генератор не трогает — прогоны прежние.
+  var offs = new WeakMap();
+  function offset(threat, half, b) {
+    if (!b.jitter) return 0;
+    if (!offs.has(threat)) offs.set(threat, (botRnd() * 2 - 1) * b.jitter * half);
+    return offs.get(threat);
+  }
 
   function botStep(P, now, b) {
     var S = P.S, T = P.TUNE;
@@ -97,7 +106,7 @@
     }
     for (var d = 0; d < defs.length; d++) {
       var a = defs[d];
-      if (done.has(a) || now < a.hitAt - gw * 0.5 || now >= a.hitAt) continue;
+      if (done.has(a) || now < a.hitAt - gw * 0.5 + offset(a, gw * 0.5, b) || now >= a.hitAt) continue;
       done.add(a);
       if (wants(a, b.skill)) { key('ArrowLeft'); break; }
     }
@@ -111,7 +120,7 @@
     if (ah) pulses.push(ah.healPulse);
     for (var p = 0; p < pulses.length; p++) {
       var pl = pulses[p];
-      if (done.has(pl) || now < pl.hitAt + (late - good) * 0.5) continue;
+      if (done.has(pl) || now < pl.hitAt + (late - good) * 0.5 + offset(pl, (good + late) * 0.5, b)) continue;
       done.add(pl);
       if (wants(pl, b.skill)) { key('ArrowRight'); return; }
     }
@@ -156,7 +165,8 @@
   var cleared = 0, lastProg = 0;   // зачищенные стаи (рост чекпоинта на 1)
   function sample(S, fr) {
     return { f: fr, t: (fr / 60), level: S.level, xp: S.xp, kills: S.kills, deaths: S.tm.deaths, flees: S.tm.flees,
-      cleared: cleared, retreats: S.tm.retreats, progress: S.progress, crits: S.tm.crits, blocked: S.tm.blocked, resist: S.resist };
+      cleared: cleared, retreats: S.tm.retreats, progress: S.progress, crits: S.tm.crits, blocked: S.tm.blocked, resist: S.resist,
+      combo: typeof COMBO === 'object' ? { best: COMBO.sess.best, threats: COMBO.sess.threats, blocked: COMBO.sess.blocked, perfect: COMBO.sess.perfect, tierMs: COMBO.tierMs.slice() } : null };
   }
 
   window.__drv = {

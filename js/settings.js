@@ -38,6 +38,7 @@ bindSlider('s-rate',  'o-rate',  'mobRate',  function (v) { return v + ' мс'; 
 bindSlider('s-flee',  'o-flee',  'retreatWindow', function (v) { return v + ' мс'; });
 bindSlider('s-rage',  'o-rage',  'rageStep', function (v) { return v + ' %'; }, 100);
 bindSlider('s-pulse', 'o-pulse', 'pulseWindow', function (v) { return v + ' мс'; });
+bindSlider('s-perfect', 'o-perfect', 'perfect', function (v) { return v + ' %'; }, 100);
 bindSlider('s-healer','o-healer','healerRate', function (v) { return v + ' %'; }, 100);
 bindSlider('s-yellow','o-yellow','yellowRate', function (v) { return v + ' %'; }, 100);
 bindSlider('s-yellowcounter','o-yellowcounter','yellowCounter', function (v) { return v + ' мс'; });
@@ -60,6 +61,7 @@ bindToggle('c-sound', 'sound', unlockAudio);
 bindToggle('c-debug', 'debug');
 bindToggle('c-adapt', 'adapt');
 bindToggle('c-fatigue', 'fatigue');
+bindToggle('c-combo', 'combo');
 
 // Сброс всех ползунков и тумблеров к умолчаниям версии.
 $('tune-reset').addEventListener('click', function () {

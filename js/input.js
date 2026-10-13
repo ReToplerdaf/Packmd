@@ -25,6 +25,7 @@ function pressGuard() {
       S.guardPressStamps = [];
       sfx('fatigue');
       floatText('УСТАЛ', '#ff9130', -1, 0, false);
+      comboBreak();
       // устал посреди отката — текущий откат тоже удлиняется
       if (cooling) {
         S.guardCoolMs = dur(TUNE.cool * S.fatigueMult);
@@ -86,6 +87,7 @@ function pressStrike() {
     var p = mob.pulse;
     if (p && now >= p.hitAt - dur(pulseGoodMs()) && now <= p.hitAt + dur(pulseLateMs())) {
       breakShield(mob, now);
+      comboHit('shield', comboPerfectPulse(p, now));
     } else {
       missShieldPulse(mob, now);
       sfx('miss');
@@ -97,7 +99,9 @@ function pressStrike() {
   // Прервать лечение можно, где бы хилер ни стоял в стае.
   var hl = activeHealer();
   if (hl && now >= hl.healPulse.hitAt - dur(pulseGoodMs()) && now <= hl.healPulse.hitAt + dur(pulseLateMs())) {
+    var hlPerfect = comboPerfectPulse(hl.healPulse, now);
     interruptHeal(hl, now);
+    comboHit('interrupt', hlPerfect);
     return;
   }
 
@@ -105,12 +109,14 @@ function pressStrike() {
     S.counterUntil = 0; S.counterMob = null;
     var killed = hitMob(mob, COUNTER_MULT, 'КОНТРА', true);
     sfx('counter');
+    comboHit('counter', false);
     if (killed) healHero();
     return;
   }
 
   // Нажали не вовремя, пока идёт канал, — лечение срабатывает сразу.
   if (hl) {
+    comboBreak();
     resolveHeal(hl, now);
     sfx('miss');
     floatText('МИМО', '#ff9130', 0, 0, false);

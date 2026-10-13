@@ -163,5 +163,8 @@ function sfx(kind, arg) {
     case 'miss':      tone(260, 180, 0.10, 'square', 0.08); break;
     case 'lost':      tone(220, 90, 0.30, 'sawtooth', 0.13); break;
     case 'fatigue':   tone(240, 140, 0.16, 'square', 0.10); break;
+    // новая ступень серии: восходящий аккорд, чем выше ступень — тем выше и длиннее
+    case 'comboUp':   for (var cu = 0; cu <= (arg || 1); cu++) (function (k) { setTimeout(function () { tone(660 * Math.pow(1.26, k + (arg || 1) - 1), 0, 0.12, 'triangle', 0.10); }, k * 70); })(cu); break;
+    case 'comboBreak': tone(200, 90, 0.20, 'triangle', 0.10); break;
   }
 }

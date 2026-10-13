@@ -120,6 +120,7 @@ function enrageBoss(now) {
 // моба в стае дополнительно усиливает боса глобально; если промахнулся сам
 // вожак — это и есть его собственный стак, второй раз считать не нужно.
 function missShieldPulse(mob, now) {
+  comboBreak();
   enrageMob(mob);
   mob.pulse = { start: now, hitAt: now + dur(PULSE_LEAD) };
   if (mob.leader) checkBossFlee(mob, now);
@@ -142,6 +143,7 @@ function interruptHeal(mob, now) {
 
 function resolveHeal(mob, now) {
   var hp = mob.healPulse;
+  comboHealMissed(hp);             // каст не прервали, хотя могли
   mob.healPulse = null;
   mob.healEndAt = performance.now();
   mob.healFlashAt = performance.now();   // яркая вспышка сферы посоха в момент лечения
@@ -168,13 +170,14 @@ function killMob(mob) {
   // переходит на следующего моба «бесплатно», гасим его.
   if (S.counterMob === mob) { S.counterUntil = 0; S.counterMob = null; }
   S.kills++;
-  grantXp(mob.xp);
+  grantXp(comboXp(mob.xp));        // серия даёт бонус к опыту
   dropFrom(mob);
   if (S.telegraph && S.telegraph.mob === mob) S.telegraph = null;
   if (!S.pack.length && S.phase === 'fight') {   // герой уже пал — стая не зачтена
     S.phase = 'walk';
     S.phaseUntil = performance.now() + dur(ri(900, 1500));
     if (TUNE.adapt) { S.progress++; S.deathStreak = 0; }   // стая зачищена — шаг вперёд по чекпоинтам
+    comboPackEnd();
     markSave();
   }
 }
@@ -190,6 +193,8 @@ function heroDies(now) {
   S.phaseUntil = Infinity;         // ждёт «Дальше» в кадре смерти
   S.tm.deaths++;
   S.deathStreak++;
+  comboBreak();
+  comboPackEnd();
   S.telegraph = null;
   S.shake = 1;
   sfx('death');
@@ -323,17 +328,20 @@ function resolveCrit(now) {
     // Заблокировано: урона нет, моб оглушён, открылось окно контратаки.
     S.tm.blocked++;
     if (S.guardPressedAt > tg.start) S.tm.react.push(S.guardPressedAt - tg.start);
+    var perfect = now < S.guardUntil && comboPerfectBlock(tg.hitAt);
+    if (now < S.guardUntil) comboHit('block', perfect);
     mob.staggerUntil = now + dur(STAGGER_MS);
     S.counterUntil = now + dur(COUNTER_MS);
     S.counterMob = mob;
     S.flash = 0.8; S.flashColor = '#3fdcc4';
     sfx('block');
-    floatText('БЛОК', '#3fdcc4', 0, 0, true);
+    floatText(perfect ? 'ИДЕАЛЬНО' : 'БЛОК', perfect ? '#ffd27a' : '#3fdcc4', 0, 0, true);
 
     var reflect = S.stats.blockReward;
     if (reflect > 0) hitMob(mob, reflect * 0.9);
   } else {
     S.tm.taken++;
+    comboMissed(tg, false);
     var dmg = damage(mobAtk(mob), S.stats.def, CRIT_MULT);
     S.hp -= dmg;
     S.shake = 1; S.flash = 0.75; S.flashColor = '#ff4d34';
@@ -363,6 +371,8 @@ function mobNormalHit(now, mob) {
 // же момент решается крит ближнего моба — блок приоритетно гасит ЕГО,
 // а этот выстрел проходит так, будто блока не было.
 function resolveRanged(mob, now) {
+  var shot = mob.rangedTelegraph || { start: now, hitAt: now };
+  var shotAt = shot.hitAt;
   mob.rangedTelegraph = null;
   var meleeClash = !!S.telegraph;
   var deflected = !meleeClash && now < S.guardUntil;
@@ -396,12 +406,15 @@ function resolveRanged(mob, now) {
     }
     S.flash = 0.4; S.flashColor = '#3fdcc4';
     sfx('block');
-    floatText('ОТБИТО', '#3fdcc4', 0, 0, false);
+    var perfectShot = comboPerfectBlock(shotAt);
+    floatText(perfectShot ? 'ИДЕАЛЬНО' : 'ОТБИТО', perfectShot ? '#ffd27a' : '#3fdcc4', 0, 0, false);
+    comboHit('block', perfectShot);
   } else if (absorbed) {
     S.flash = 0.3; S.flashColor = '#3fdcc4';
     sfx('block');
     floatText('БЛОК', '#3fdcc4', 0, 0, false);
   } else {
+    comboMissed(shot, meleeClash);
     S.hp -= dmg;
     floatText('−' + dmg, '#a8748a', -1, 0, false);
     if (!enraged) {                 // злит только пропущенный ОБЫЧНЫЙ выстрел
@@ -430,7 +443,7 @@ function step(now) {
   }
   if (S.phase === 'walk') {
     if (S.tut && S.tut.spawned) { tutFinish(); return; }   // стая обучения закончилась
-    if (now >= S.phaseUntil) { S.phase = 'fight'; spawnPack(now); S.heroSwingAt = now + dur(250); }
+    if (now >= S.phaseUntil) { S.phase = 'fight'; spawnPack(now); comboPackStart(); S.heroSwingAt = now + dur(250); }
     return;
   }
   if (S.phase === 'dead') {
