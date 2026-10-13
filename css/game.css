@@ -571,48 +571,58 @@ button.drop-verdict, .drop button.verdict {
 .backpack-overlay {
   position: fixed; inset: 0; z-index: 40;
   background: rgba(6,8,13,.78);
-  display: flex; align-items: flex-end; justify-content: center;
+  display: flex; align-items: stretch; justify-content: center;
   padding: 0;
 }
-@media (min-width: 640px) {
-  .backpack-overlay { align-items: center; padding: 24px; }
-}
+/* Рюкзак на весь экран; заголовок сверху, вкладки и «Закрыть» — снизу,
+   чтобы до них дотягивался большой палец. Отступы под вырез и полоску «домой». */
 .backpack-card {
   width: 100%; max-width: 480px;
-  max-height: 88vh;
+  height: 100%;
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 8px 8px 0 0;
+  border-inline: 1px solid var(--line);
   display: flex; flex-direction: column;
   overflow: hidden;
-}
-@media (min-width: 640px) {
-  .backpack-card { border-radius: 8px; max-height: 80vh; }
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .backpack-head {
   flex: 0 0 auto;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 14px;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding: 10px 14px 9px;
   border-bottom: 1px solid var(--line);
 }
 .backpack-head h2 {
   margin: 0; font-family: var(--font-ui); font-size: 13px; font-weight: 700;
   letter-spacing: .12em; text-transform: uppercase; color: var(--ink);
 }
+.backpack-paused {
+  font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--accent);
+}
+.backpack-card .panel { border: 0; border-radius: 0; }
+.backpack-foot {
+  flex: 0 0 auto;
+  background: var(--raised);
+  border-top: 1px solid var(--line);
+  padding: 0 10px 10px;
+}
+.backpack-foot .tabs { border-bottom: 0; margin: 0 -10px 10px; }
+.backpack-foot .tabs button {
+  padding: 15px 2px 14px;
+  font-size: 10.5px; letter-spacing: .08em;
+  border-bottom: 0; border-top: 2px solid transparent;
+}
+.backpack-foot .tabs button[aria-selected="true"] { border-top-color: var(--accent); background: var(--surface); }
 .backpack-close {
   appearance: none; -webkit-appearance: none; touch-action: manipulation;
-  border: 1px solid var(--line); border-radius: 4px;
-  background: transparent; color: var(--ink-dim);
-  font-family: var(--font-ui); font-size: 11px; letter-spacing: .08em;
-  padding: 7px 12px; cursor: pointer;
+  display: block; width: 100%;
+  border: 1px solid var(--line); border-radius: 6px;
+  background: var(--surface); color: var(--ink);
+  font-family: var(--font-ui); font-size: 12.5px; font-weight: 600; letter-spacing: .08em;
+  padding: 13px 12px; cursor: pointer;
 }
-.backpack-paused {
-  flex: 0 0 auto;
-  font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--accent); text-align: center;
-  padding: 5px; border-bottom: 1px solid var(--line-soft);
-  background: var(--raised);
-}
+.backpack-close:active { transform: translateY(1px); }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; }

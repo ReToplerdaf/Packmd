@@ -61,21 +61,13 @@
 
   <div class="backpack-overlay" id="backpack-overlay" hidden>
     <div class="backpack-card">
+      <!-- Сверху только заголовок; всё управление — внизу, под большим пальцем -->
       <div class="backpack-head">
         <h2>Рюкзак</h2>
-        <button type="button" class="backpack-close" id="backpack-close">Закрыть ×</button>
+        <div class="backpack-paused">бой на паузе</div>
       </div>
-      <div class="backpack-paused">Бой на паузе, пока открыт рюкзак</div>
 
       <div class="panel">
-        <div class="tabs" role="tablist">
-          <button type="button" role="tab" id="tab-loot"  aria-selected="true"  aria-controls="pane-loot">Лут</button>
-          <button type="button" role="tab" id="tab-gear"  aria-selected="false" aria-controls="pane-gear">Экип</button>
-          <button type="button" role="tab" id="tab-info"  aria-selected="false" aria-controls="pane-info">Инфо</button>
-          <button type="button" role="tab" id="tab-tune"  aria-selected="false" aria-controls="pane-tune">Настройка</button>
-          <button type="button" role="tab" id="tab-stats" aria-selected="false" aria-controls="pane-stats">Замеры</button>
-        </div>
-
         <div class="tab-body" id="pane-loot" role="tabpanel" aria-labelledby="tab-loot"></div>
 
         <div class="tab-body" id="pane-gear" role="tabpanel" aria-labelledby="tab-gear" hidden></div>
@@ -275,6 +267,17 @@
         </div>
 
         <div class="tab-body" id="pane-stats" role="tabpanel" aria-labelledby="tab-stats" hidden></div>
+      </div>
+
+      <div class="backpack-foot">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab-loot"  aria-selected="true"  aria-controls="pane-loot">Лут</button>
+          <button type="button" role="tab" id="tab-gear"  aria-selected="false" aria-controls="pane-gear">Экип</button>
+          <button type="button" role="tab" id="tab-info"  aria-selected="false" aria-controls="pane-info">Инфо</button>
+          <button type="button" role="tab" id="tab-tune"  aria-selected="false" aria-controls="pane-tune">Настройка</button>
+          <button type="button" role="tab" id="tab-stats" aria-selected="false" aria-controls="pane-stats">Замеры</button>
+        </div>
+        <button type="button" class="backpack-close" id="backpack-close">Закрыть ×</button>
       </div>
     </div>
   </div>
