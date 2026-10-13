@@ -125,7 +125,7 @@ function drawMob(m, x, gy, t, isFront) {
   var isYellow = m.type === 'yellow';
   var swordBlockState = 'steel';
   var armed = m.type !== 'ranged' && m.type !== 'healer';
-  var swCx = 0, swCy = -hgt * 0.55;   // центр клинка — сюда сводится кольцо крита
+  var swCx = 0, swCy = -hgt * 0.55;   // центр клинка
   var guardUp = !!m.shield;
   var blockCol = isYellow ? '224,194,79' : '74,159,232';
 
