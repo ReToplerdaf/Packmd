@@ -135,6 +135,22 @@
     else if (act === 'strike') key('ArrowRight');
   }
 
+  // Надеть из рюкзака всё, что по подсказке игры (item.score) лучше надетого, —
+  // то же, что нажать «надеть». Только для симуляции баланса.
+  function autoEquip(S) {
+    for (var i = 0; i < S.log.length; i++) {
+      var it = S.log[i].item;
+      if (!it) continue;
+      var on = S.gear[it.slot.id];
+      if (on !== it && (!on || it.score > on.score)) equipItem(it);
+    }
+  }
+  var cleared = 0, lastProg = 0;   // зачищенные стаи (рост чекпоинта на 1)
+  function sample(S, fr) {
+    return { f: fr, t: (fr / 60), level: S.level, xp: S.xp, kills: S.kills, deaths: S.tm.deaths, flees: S.tm.flees,
+      cleared: cleared, retreats: S.tm.retreats, progress: S.progress, crits: S.tm.crits, blocked: S.tm.blocked, resist: S.resist };
+  }
+
   window.__drv = {
     fnv: fnv,
     snapshot: function () { return snapshot(window.__pack); },
@@ -153,6 +169,9 @@
         uiStep(fr, P);
         var q = rafQ; rafQ = [];
         for (var i = 0; i < q.length; i++) q[i](vt);
+        if (P) { if (P.S.progress === lastProg + 1) cleared++; lastProg = P.S.progress; }
+        if (bot.equip && fr % 30 === 0 && typeof equipItem === 'function') autoEquip(P.S);
+        if (opt.sample && fr % opt.sample === 0) out.push(sample(P.S, fr));
         if (opt.every && fr % opt.every === 0) {
           var rec = { f: fr, s: fnv(snapshot(P)), ui: fnv(document.body.innerText) };
           if (opt.canvasEvery && fr % opt.canvasEvery === 0) rec.cv = fnv(cv.toDataURL());
