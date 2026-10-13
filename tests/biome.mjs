@@ -94,24 +94,6 @@ const state = page => page.evaluate(() => ({
   await g.close();
 }
 
-// Мобы биомов: в Русле — рыба, в Пещере — летучая мышь (и рыба реже), в Пустынном городе — змея, на Метеорите — голем.
-{
-  const g = await openGame(browser, file, { seed: 9, tune: { biomeMobRate: 1 } });
-  await run(g.page, 100, { bot: { skill: 1 } });
-  const rolls = await g.page.evaluate(() => {
-    var out = {};
-    [0, 10, 20, 30].forEach(function (p) { S.progress = p; var c = {}; for (var i = 0; i < 400; i++) { var k = biomeMobType('normal'); c[k] = (c[k] || 0) + 1; } out[p] = c; });
-    out.yellow = biomeMobType('yellow'); S.progress = 0; return out;
-  });
-  check('мобы биомов: свой — чаще, прошлые — реже, жёлтого не трогают',
-    rolls[0].fish === 400 && rolls[10].bat > rolls[10].fish && !rolls[10].snake && rolls[20].snake > rolls[20].bat && rolls[30].golem > rolls[30].snake && rolls.yellow === 'yellow', rolls);
-  let pk = [];
-  for (let i = 0; i < 10 && !pk.includes('bat'); i++) { await toPack(g.page, 10); pk = await g.page.evaluate(() => S.pack.map(m => m.leader ? 'leader' : m.type)); }
-  check('в стае Пещеры есть летучие мыши, обычных красных нет', pk.includes('bat') && !pk.includes('normal'), pk);
-  check('нет ошибок в консоли (мобы биомов)', g.errors.length === 0, g.errors);
-  await g.close();
-}
-
 // Выключенные биомы — всё как раньше.
 {
   const g = await openGame(browser, file, { seed: 5, tune: { biomes: false } });

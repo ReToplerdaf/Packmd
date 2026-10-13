@@ -262,7 +262,7 @@ function shiftTimers(d) {
   S.counterUntil += d; S.strikeCoolAt += d; S.phaseUntil += d;
   if (S.telegraph) { S.telegraph.start += d; S.telegraph.hitAt += d; }
   if (BIOME.banner) BIOME.banner.start += d;
-  if (CATCH.ev) { CATCH.ev.start += d; CATCH.ev.openAt += d; CATCH.ev.closeAt += d; }
+  if (CIRCLE_MODE) circleShift(d);
   for (var i = 0; i < S.pack.length; i++) {
     var m = S.pack[i];
     if (m.staggerUntil) m.staggerUntil += d;
@@ -542,8 +542,7 @@ function step(now) {
   var mob = front();
   if (!mob) { S.phase = 'walk'; S.phaseUntil = now + dur(900); return; }
   if (mob.chief) chiefTick(mob, now);
-  catchTick(mob, now);
-  if (S.phase !== 'fight') return;   // промах по цели «поймай» добил героя
+  if (CIRCLE_MODE) { circleTick(mob, now); return; }   // «кружок»: ни авто-атаки, ни ходов моба
 
   // Моб дошёл до фронта уже со щитом, но без активного пульса (жёлтый —
   // щит у него поднят с самого спавна) — запускаем отсчёт только теперь,
@@ -601,11 +600,6 @@ function step(now) {
     }
     if (mob.type === 'healer') {
       // лечит по своему таймеру (см. выше), в ближнем бою не участвует
-      return;
-    }
-    if (isCatchMob(mob)) {
-      // мобы биомов вместо крита — ход «поймай» (см. catch.js)
-      if (!CATCH.ev) catchStart(mob, now);
       return;
     }
     var canShield = !mob.noShieldNext;

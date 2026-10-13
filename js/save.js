@@ -4,8 +4,8 @@
 // «Начать заново» во вкладке «Настройка».
 "use strict";
 
-var SAVE_KEY = 'arena.save';
-var SAVE_BROKEN_KEY = 'arena.save.broken';
+var SAVE_KEY = CIRCLE_MODE ? 'arena.circle.save' : 'arena.save';
+var SAVE_BROKEN_KEY = SAVE_KEY + '.broken';
 var SAVE_VERSION = 1;
 var SAVE_PREFIX = 'PACK1:';
 

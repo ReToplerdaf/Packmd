@@ -63,7 +63,9 @@
   // Касание канваса в точке (x, y) его координат — цели «поймай».
   function tapAt(x, y) {
     var cv = document.getElementById('arena'), r = cv.getBoundingClientRect();
-    cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true, clientX: r.left + x, clientY: r.top + y }));
+    var o = { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true, clientX: r.left + x, clientY: r.top + y };
+    cv.dispatchEvent(new PointerEvent('pointerdown', o));
+    cv.dispatchEvent(new PointerEvent('pointerup', o));
   }
   function visible(id) { var n = document.getElementById(id); return n && !n.hidden; }
 
@@ -101,15 +103,13 @@
     if (visible('prompt-overlay')) { tap(document.getElementById(b.prompt === 'ack' ? 'prompt-ack' : 'prompt-retreat')); return; }
     if (S.paused || S.phase !== 'fight' || !b.skill) return;
 
-    // «Поймай»: касание по цели в середине окна (настоящим касанием канваса).
-    var cev = typeof CATCH === 'object' ? CATCH.ev : null;
-    if (cev) {
-      var chalf = (cev.closeAt - cev.openAt) / 2;
-      for (var ct = 0; ct < cev.targets.length; ct++) {
-        var tgc = cev.targets[ct];
-        if (tgc.hit || done.has(tgc) || now < cev.openAt + chalf + offset(tgc, chalf, b)) continue;
-        done.add(tgc);
-        if (wants(tgc, b.skill)) { tapAt(tgc.x, tgc.y); return; }
+    // «Кружок»: касание по красному кружку в середине окна (настоящим касанием канваса).
+    var cr = typeof CIRCLE === 'object' && CIRCLE_MODE ? CIRCLE : null;
+    if (cr && cr.red && cr.mob && !done.has(cr.red)) {
+      var rhalf = (cr.redUntil - cr.red.start) / 2;
+      if (now >= cr.red.start + rhalf + offset(cr.red, rhalf, b)) {
+        done.add(cr.red);
+        if (wants(cr.red, b.skill)) { tapAt(cr.x, cr.y); return; }
       }
     }
 

@@ -68,7 +68,7 @@ function retreatBehindProtector(mob, now) {
   // одного удара, и «прикрытие» исчезает мгновенно, что выглядит нелепо,
   // особенно если это делает сам вожак).
   var pi = i + 1;
-  while (pi < S.pack.length && (S.pack[pi].type === 'ranged' || S.pack[pi].type === 'healer' || isCatchMob(S.pack[pi]))) pi++;
+  while (pi < S.pack.length && (S.pack[pi].type === 'ranged' || S.pack[pi].type === 'healer')) pi++;
   if (pi >= S.pack.length) return; // некого поставить в прикрытие — отступление не удаётся
   var protector = S.pack[pi];
   S.pack[i] = protector; S.pack[pi] = mob;

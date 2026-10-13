@@ -21,3 +21,7 @@ if (/(href|src)="(css|js)\//.test(html)) throw new Error('остались вн�
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist/pack.html'), html);
 console.log('dist/pack.html', (html.length / 1024).toFixed(1) + ' КБ');
+// Версия «кружок» одним файлом: тот же код, режим включён флагом до скриптов.
+const circle = html.replace('<script>', '<script>window.PACK_CIRCLE = true;</script>\n<script>');
+fs.writeFileSync(path.join(root, 'dist/pack-circle.html'), circle);
+console.log('dist/pack-circle.html', (circle.length / 1024).toFixed(1) + ' КБ');

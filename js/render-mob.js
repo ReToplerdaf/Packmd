@@ -19,14 +19,6 @@ function drawMob(m, x, gy, t, isFront) {
   ctx.fillStyle = 'rgba(0,0,0,.42)';
   ctx.beginPath(); ctx.ellipse(0, 2, 15 * s, 4 * s, 0, 0, 6.2832); ctx.fill();
 
-  if (m.type === 'bat' || m.type === 'fish' || m.type === 'snake') {
-    var cev = CATCH.ev && CATCH.ev.mob === m ? CATCH.ev : null;
-    var cp = cev ? Math.min(1, (t - cev.start) / Math.max(1, cev.openAt - cev.start)) : 0;
-    (m.type === 'bat' ? drawBat : m.type === 'fish' ? drawFish : drawSnake)(m, s, hgt, t, cev, cp, stagger, flashHurt);
-    ctx.restore(); drawMobHp(m, x, gy, s, isFront); return;
-  }
-
-
   // Крит больше не подсвечивается свечением тела — его читают по мечу:
   // замах вверх, вспышка красным в верхней точке, удар вниз (см. ниже).
   var hk = 0;
@@ -41,7 +33,7 @@ function drawMob(m, x, gy, t, isFront) {
   // Злость красит моба всё гуще к красному — видно даже без короны.
   var RAGE_COLORS = ['#8f3f4c', '#a8453f', '#c23f2e', '#e2341c'];
   var rageColor = RAGE_COLORS[Math.min(RAGE_COLORS.length - 1, m.rage || 0)];
-  var TYPE_COLORS = { healer: '#3f8f6a', yellow: '#c2a83f', ranged: '#4a6f9f', golem: '#5c5862' };
+  var TYPE_COLORS = { healer: '#3f8f6a', yellow: '#c2a83f', ranged: '#4a6f9f' };
   var baseColor = TYPE_COLORS[m.type] || '#8f3f4c';
   var body = flashHurt ? '#ffffff' : (stagger ? '#6a4450' :
     ((m.rage || 0) > 0 ? rageColor : (m.vulnMult > 1 ? '#a8583f' : baseColor)));
@@ -427,14 +419,7 @@ function drawMob(m, x, gy, t, isFront) {
   }
   ctx.restore();
 
-  drawMobHp(m, x, gy, s, isFront);
-
-  // Кольца у Хилера больше нет — канал лечения читается по дрожи посоха
-  // и вспышке сферы (см. отрисовку посоха выше).
-}
-
-// Полоска здоровья — ровно под ногами моба.
-function drawMobHp(m, x, gy, s, isFront) {
+  // полоска здоровья
   if (isFront || m.hp < m.maxHp) {
     var bw = 34 * s, frac = Math.max(0, m.hp / m.maxHp);
     // ровно под ногами моба, под тенью — не мешает коронам и мечу сверху
@@ -444,88 +429,8 @@ function drawMobHp(m, x, gy, s, isFront) {
     ctx.fillStyle = m.leader ? '#ff9130' : '#d8563f';
     ctx.fillRect(x - bw / 2, barY, bw * frac, 4);
   }
-}
 
-// Летучая мышь: висит в воздухе, машет крыльями. Перед укусом крылья
-// поднимаются и замирают, глаза разгораются красным; укусов два подряд.
-function drawBat(m, s, hgt, t, tg, tp, stagger, flashHurt) {
-  var rage = m.rage || 0;
-  var body = flashHurt ? '#ffffff' : (stagger ? '#4a3a58' : (rage > 0 ? '#8a3a6a' : (m.vulnMult > 1 ? '#7a4a6a' : '#5b3f7a')));
-  var hover = -hgt * 0.75;
-  var still = tg && t >= tg.openAt;                 // замерла — сейчас в неё надо попасть
-  var flap = still ? 0.95 : Math.sin(t / (tg ? 45 : 85) + m.wob);
-  var lunge = 0;
-  ctx.save();
-  ctx.translate(0, hover + lunge * 10 * s);
-  ctx.scale(1 + lunge * 0.25, 1 + lunge * 0.25);
-  // крылья
-  ctx.fillStyle = flashHurt ? '#ffffff' : '#3a2850';
-  for (var side = -1; side <= 1; side += 2) {
-    var up = flap * 0.9;
-    ctx.save();
-    ctx.scale(side, 1);
-    ctx.rotate(-up * 0.6);
-    ctx.beginPath();
-    ctx.moveTo(4 * s, -hgt * 0.32);
-    ctx.lineTo(30 * s, -hgt * 0.62);
-    ctx.lineTo(26 * s, -hgt * 0.30);
-    ctx.lineTo(20 * s, -hgt * 0.38);
-    ctx.lineTo(16 * s, -hgt * 0.20);
-    ctx.lineTo(10 * s, -hgt * 0.28);
-    ctx.lineTo(4 * s, -hgt * 0.12);
-    ctx.closePath(); ctx.fill();
-    ctx.restore();
-  }
-  // тело и уши
-  ctx.fillStyle = body;
-  ctx.beginPath(); ctx.ellipse(0, -hgt * 0.26, 8 * s, 11 * s, 0, 0, 6.2832); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(-6 * s, -hgt * 0.42); ctx.lineTo(-5 * s, -hgt * 0.62); ctx.lineTo(-1 * s, -hgt * 0.46); ctx.closePath(); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(6 * s, -hgt * 0.42); ctx.lineTo(5 * s, -hgt * 0.62); ctx.lineTo(1 * s, -hgt * 0.46); ctx.closePath(); ctx.fill();
-  // глаза: тёмные, перед укусом разгораются
-  var glow = tg ? Math.min(1, tp * 1.2) : 0;   // глаза разгораются к остановке
-  if (glow > 0) { ctx.shadowColor = '#ff2a1a'; ctx.shadowBlur = 10 * s * glow; }
-  ctx.fillStyle = glow > 0 ? 'rgba(255,' + Math.round(200 - 160 * glow) + ',60,1)' : '#1a0f14';
-  ctx.beginPath(); ctx.arc(-3 * s, -hgt * 0.32, 1.7 * s, 0, 6.2832); ctx.fill();
-  ctx.beginPath(); ctx.arc(3 * s, -hgt * 0.32, 1.7 * s, 0, 6.2832); ctx.fill();
-  ctx.shadowBlur = 0;
-  // клыки
-  ctx.fillStyle = '#eee';
-  ctx.beginPath(); ctx.moveTo(-2.5 * s, -hgt * 0.2); ctx.lineTo(-1.5 * s, -hgt * 0.13); ctx.lineTo(-0.6 * s, -hgt * 0.2); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(2.5 * s, -hgt * 0.2); ctx.lineTo(1.5 * s, -hgt * 0.13); ctx.lineTo(0.6 * s, -hgt * 0.2); ctx.fill();
-  ctx.restore();
-}
+  // Кольца у Хилера больше нет — канал лечения читается по дрожи посоха
+  // и вспышке сферы (см. отрисовку посоха выше).
 
-// Рыба (заглушка): серебристое тело с хвостом, в прыжке выгибается,
-// на дне лежит на боку и бьёт хвостом.
-function drawFish(m, s, hgt, t, ev, p, stagger, flashHurt) {
-  var lying = ev && t >= ev.openAt;
-  var flop = lying ? Math.sin(t / 70) * 0.25 : (ev ? Math.sin(p * Math.PI * 4) * 0.4 : Math.sin(t / 400 + m.wob) * 0.1);
-  ctx.save();
-  ctx.translate(0, -8 * s);
-  ctx.rotate(flop);
-  ctx.fillStyle = flashHurt ? '#ffffff' : ((m.rage || 0) > 0 ? '#c2706a' : '#8fb0c2');
-  ctx.beginPath(); ctx.ellipse(0, 0, 16 * s, 7 * s, 0, 0, 6.2832); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(13 * s, 0); ctx.lineTo(24 * s, -7 * s); ctx.lineTo(24 * s, 7 * s); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#1a0f14';
-  ctx.beginPath(); ctx.arc(-9 * s, -2 * s, 1.6 * s, 0, 6.2832); ctx.fill();
-  ctx.restore();
-}
-
-// Змея (заглушка): кольца на земле и поднятая голова; во время броска
-// голова улетает в точку (её рисует drawSnakeLunge), здесь остаётся шея.
-function drawSnake(m, s, hgt, t, ev, p, stagger, flashHurt) {
-  var body = flashHurt ? '#ffffff' : ((m.rage || 0) > 0 ? '#c2703a' : '#b89a45');
-  ctx.fillStyle = body;
-  ctx.beginPath(); ctx.ellipse(0, -4 * s, 16 * s, 5 * s, 0, 0, 6.2832); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(1 * s, -10 * s, 12 * s, 4.5 * s, 0, 0, 6.2832); ctx.fill();
-  var striking = ev && t >= ev.openAt;
-  var sway = ev ? Math.sin(t / 60) * 3 * s * p : Math.sin(t / 500 + m.wob) * 2 * s;
-  ctx.strokeStyle = body; ctx.lineWidth = 6 * s; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(2 * s, -12 * s); ctx.quadraticCurveTo(-4 * s + sway, -22 * s, 6 * s + sway, -30 * s); ctx.stroke();
-  if (!striking) {
-    ctx.fillStyle = body;
-    ctx.beginPath(); ctx.ellipse(6 * s + sway, -31 * s, 6 * s, 4 * s, 0, 0, 6.2832); ctx.fill();
-    ctx.fillStyle = ev ? '#ff3b2f' : '#1a0f14';
-    ctx.beginPath(); ctx.arc(4 * s + sway, -32 * s, 1.2 * s, 0, 6.2832); ctx.arc(8 * s + sway, -32 * s, 1.2 * s, 0, 6.2832); ctx.fill();
-  }
 }

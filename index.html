@@ -167,9 +167,21 @@
               <label for="s-bossevery">Длина биома, стай</label><output id="o-bossevery">10</output>
               <input type="range" id="s-bossevery" min="3" max="20" step="1" value="10">
             </div>
-            <div class="tune-row">
-              <label for="s-biomemob">Моб биома вместо обычного</label><output id="o-biomemob">30 %</output>
-              <input type="range" id="s-biomemob" min="0" max="100" step="5" value="30">
+            <div class="tune-row circle-only" hidden>
+              <label for="s-circlered">Кружок: сколько горит красным</label><output id="o-circlered">700 мс</output>
+              <input type="range" id="s-circlered" min="200" max="2000" step="50" value="700">
+            </div>
+            <div class="tune-row circle-only" hidden>
+              <label for="s-circlecool">Кружок: откат после тычка</label><output id="o-circlecool">900 мс</output>
+              <input type="range" id="s-circlecool" min="0" max="3000" step="100" value="900">
+            </div>
+            <div class="tune-row circle-only" hidden>
+              <label for="s-circlespeed">Кружок: скорость</label><output id="o-circlespeed">220</output>
+              <input type="range" id="s-circlespeed" min="40" max="800" step="20" value="220">
+            </div>
+            <div class="tune-row circle-only" hidden>
+              <label for="s-circlegreen">Кружок: зелёный до (случайно от 40%)</label><output id="o-circlegreen">3000 мс</output>
+              <input type="range" id="s-circlegreen" min="500" max="8000" step="250" value="3000">
             </div>
             <div class="tune-row">
               <label for="s-autoafter">Авто-режим через (0 — выключен)</label><output id="o-autoafter">15 с</output>
@@ -353,7 +365,7 @@
 <script src="js/render.js"></script>
 <script src="js/render-mob.js"></script>
 <script src="js/render-fx.js"></script>
-<script src="js/catch.js"></script>
+<script src="js/circle.js"></script>
 <script src="js/hud.js"></script>
 <script src="js/inventory.js"></script>
 <script src="js/settings.js"></script>
