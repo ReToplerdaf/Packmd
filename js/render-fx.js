@@ -188,7 +188,8 @@ function render(t) {
   var gy = groundY();
 
   // фон
-  var bio = TUNE.biomes && !S.tut ? curBiome() : BIOME_PLAIN;
+  // фоны биомов тяжёлые для телефона — по умолчанию выключены (тумблер «Фоны биомов»)
+  var bio = TUNE.biomes && TUNE.biomeBg && !S.tut ? curBiome() : BIOME_PLAIN;
   var grd = ctx.createLinearGradient(0, 0, 0, H);
   grd.addColorStop(0, bio.bg[0]); grd.addColorStop(1, bio.bg[1]);
   ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
