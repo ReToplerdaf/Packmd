@@ -1,5 +1,5 @@
 // Версия «кружок» (index.html?circle): у переднего моба в одной из двух
-// небольших областей (над кнопкой блока и над кнопкой удара) мельтешит
+// областей — дугах по краю кнопок блока и удара, от края экрана до рюкзака — мельтешит
 // зелёный кружок с остановками, в случайный момент краснеет —
 // пока он красный, по нему надо ударить пальцем. Попал — моб умирает, не
 // успел — урон герою. Тычок мимо или по зелёному — откат (циферблат).
@@ -13,33 +13,65 @@ var CIRCLE_HIT_R = 40;         // радиус, в котором касание
 var CIRCLE_HOLD_MS = 450;      // столько держать палец на кружке, чтобы двигать область
 var CIRCLE_STOP = [100, 1100]; // остановки между перебежками (игровые мс), каждая — своя
 var CIRCLE_PACE = [0.5, 1.8];  // скорость каждой перебежки — circleSpeed × случайное из этих
-var CIRCLE_AREA_KEY = 'arena.circle.areas';
-// Две области — доли ширины и высоты канваса: над кнопкой блока и над кнопкой удара.
+var CIRCLE_AREA_KEY = 'arena.circle.arcs';
+// Две области — дуги вдоль скруглённого края кнопок «Защита» (0) и «Атака» (1):
+// от края экрана до рюкзака, у края экрана толще, к рюкзаку сужаются.
+// Положение кружка в дуге — u (0 у края экрана … 1 у рюкзака) и v (0 у кнопки … 1 снаружи).
+// Сдвиг области удержанием — x, y в долях ширины и высоты экрана.
 // Каждый новый кружок (новый моб или после пропущенного красного) — в случайной из них.
-var CIRCLE_AREAS_DEFAULT = [{ x: 0.03, y: 0.585, w: 0.4, h: 0.135 }, { x: 0.57, y: 0.585, w: 0.4, h: 0.135 }];
+var CIRCLE_ARC_GAP = 2;        // зазор между кнопкой и дугой, px
+var CIRCLE_ARC_THICK = [0.62, 0.3];  // толщина дуги у края экрана и у рюкзака — доли радиуса кнопки
+var CIRCLE_HOP = 0.35;         // шанс, что следующая перебежка — прыжок в другую дугу (через рюкзак)
+var CIRCLE_HOP_LIFT = 70;      // высота прыжка, px
 
 var CIRCLE = {
   mob: null,                   // передний моб, которому принадлежит кружок
-  x: 0, y: 0, tx: 0, ty: 0,    // где кружок и куда бежит
+  x: 0, y: 0,                  // где кружок на экране
+  hop: null,                   // прыжок в другую дугу: { fx, fy, p } — откуда и доля пути
   stopUntil: 0, last: 0,
   redAt: 0, redUntil: 0, red: null,   // red — текущая «угроза» (объект на каждое покраснение)
   coolStart: 0, coolUntil: 0, pace: 1,
-  areas: CIRCLE_AREAS_DEFAULT.map(function (a) { return { x: a.x, y: a.y, w: a.w, h: a.h }; }),
+  u: 0, v: 0, tu: 0, tv: 0,
+  areas: [{ x: 0, y: 0 }, { x: 0, y: 0 }],
   ai: 0, area: null, hold: null
 };
 try {
   var savedAreas = JSON.parse(localStorage.getItem(CIRCLE_AREA_KEY) || 'null');
-  if (savedAreas && savedAreas.length === 2 && savedAreas.every(function (a) { return a && a.w > 0 && a.h > 0; })) CIRCLE.areas = savedAreas;
+  if (savedAreas && savedAreas.length === 2 && savedAreas.every(function (a) { return a && isFinite(a.x) && isFinite(a.y); })) CIRCLE.areas = savedAreas;
 } catch (e) {}
 CIRCLE.area = CIRCLE.areas[0];
 
-function circleRect() {
-  var a = CIRCLE.area;
-  return { x: a.x * W, y: a.y * H, w: a.w * W, h: a.h * H };
+// Геометрия дуги ai по текущему положению кнопок на экране.
+function circleArc(ai) {
+  var cr = cv.getBoundingClientRect();
+  var b = document.getElementById(ai ? 'btn-strike' : 'btn-guard').getBoundingClientRect();
+  var bag = document.getElementById('btn-bag').getBoundingClientRect();
+  var s = ai ? -1 : 1;                                   // 1 — дуга слева, −1 — справа (зеркально)
+  var cx = (ai ? b.right : b.left) - cr.left, cy = b.bottom - cr.top, R = b.width || 1;
+  // конец дуги — над плечом рюкзака
+  var ex = (ai ? bag.right - bag.width * 0.25 : bag.left + bag.width * 0.25) - cr.left, ey = bag.top - cr.top;
+  var a1 = Math.atan2(cy - ey, s * (ex - cx));
+  var off = CIRCLE.areas[ai] || { x: 0, y: 0 };
+  return { cx: cx + off.x * W, cy: cy + off.y * H, R: R, s: s, a0: Math.PI / 2, a1: Math.max(0.1, Math.min(1.4, a1)) };
 }
-function circleRandomPoint() {
-  var r = circleRect(), m = CIRCLE_R;
-  return { x: rr(r.x + m, r.x + Math.max(m, r.w - m)), y: rr(r.y + m, r.y + Math.max(m, r.h - m)) };
+// Точка дуги: u — вдоль (0 у края экрана, 1 у рюкзака), v — поперёк (0 у кнопки, 1 снаружи).
+function circleArcPoint(g, u, v) {
+  var a = g.a0 + (g.a1 - g.a0) * u;
+  var thick = g.R * (CIRCLE_ARC_THICK[0] + (CIRCLE_ARC_THICK[1] - CIRCLE_ARC_THICK[0]) * u);
+  var r = g.R + CIRCLE_ARC_GAP + thick * v;
+  return { x: g.cx + g.s * Math.cos(a) * r, y: g.cy - Math.sin(a) * r, thick: thick };
+}
+// Где может стоять центр кружка: так, чтобы он целиком был в дуге и на экране.
+function circleUV(g, u, v) {
+  var thick = g.R * (CIRCLE_ARC_THICK[0] + (CIRCLE_ARC_THICK[1] - CIRCLE_ARC_THICK[0]) * u);
+  var m = Math.min(0.5, CIRCLE_R / Math.max(1, thick));
+  var p = circleArcPoint(g, u, m + (1 - 2 * m) * v);
+  p.x = Math.max(CIRCLE_R, Math.min(W - CIRCLE_R, p.x));
+  return p;
+}
+function circlePlace() {
+  var p = circleUV(circleArc(CIRCLE.ai), CIRCLE.u, CIRCLE.v);
+  CIRCLE.x = p.x; CIRCLE.y = p.y;
 }
 function circleGreenMs() { return rr(TUNE.circleGreen * 0.4, TUNE.circleGreen); }
 
@@ -51,14 +83,15 @@ function circlePack() {
 
 // Новый кружок — в случайной из двух областей.
 function circlePickArea() {
-  CIRCLE.ai = rnd() < 0.5 ? 0 : 1;
+  CIRCLE.ai = rnd() < 0.5 ? 0 : 1;   // area — сдвиг этой дуги
   CIRCLE.area = CIRCLE.areas[CIRCLE.ai];
 }
 function circleReset(mob, now) {
   circlePickArea();
-  var p = circleRandomPoint(), q = circleRandomPoint();
   CIRCLE.mob = mob; CIRCLE.pace = rr(CIRCLE_PACE[0], CIRCLE_PACE[1]);
-  CIRCLE.x = p.x; CIRCLE.y = p.y; CIRCLE.tx = q.x; CIRCLE.ty = q.y;
+  CIRCLE.u = rnd(); CIRCLE.v = rnd(); CIRCLE.tu = rnd(); CIRCLE.tv = rnd();
+  CIRCLE.hop = null;
+  circlePlace();
   CIRCLE.stopUntil = 0; CIRCLE.last = now;
   CIRCLE.red = null; CIRCLE.redAt = now + dur(circleGreenMs());
 }
@@ -77,18 +110,40 @@ function circleTick(mob, now) {
 
   // перебежки с остановками
   if (now >= CIRCLE.stopUntil) {
-    var dx = CIRCLE.tx - CIRCLE.x, dy = CIRCLE.ty - CIRCLE.y, dist = Math.hypot(dx, dy);
+    // бежит вдоль дуги: шаг в пикселях переводится в долю пути от точки до цели
+    // прыжок — по прямой с подъёмом над рюкзаком в цель (tu, tv) другой дуги
+    var hop = CIRCLE.hop;
+    var g = circleArc(hop ? 1 - CIRCLE.ai : CIRCLE.ai), to = circleUV(g, CIRCLE.tu, CIRCLE.tv);
     var step = TUNE.circleSpeed * CIRCLE.pace / 1000 * dt * (TUNE.speed || 1);
-    if (dist <= step) {
-      CIRCLE.x = CIRCLE.tx; CIRCLE.y = CIRCLE.ty;
+    if (hop) {
+      var len = Math.max(1, Math.hypot(to.x - hop.fx, to.y - hop.fy));
+      hop.p = Math.min(1, hop.p + step / len);
+      if (hop.p >= 1) { CIRCLE.hop = null; CIRCLE.ai = 1 - CIRCLE.ai; CIRCLE.area = CIRCLE.areas[CIRCLE.ai]; CIRCLE.x = to.x; CIRCLE.y = to.y; }
+      else {
+        CIRCLE.x = hop.fx + (to.x - hop.fx) * hop.p;
+        CIRCLE.y = hop.fy + (to.y - hop.fy) * hop.p - Math.sin(Math.PI * hop.p) * CIRCLE_HOP_LIFT;
+        return circleTickRed(mob, now);
+      }
+    }
+    var dist = Math.hypot(to.x - CIRCLE.x, to.y - CIRCLE.y);
+    if (dist <= step || hop) {
+      CIRCLE.u = CIRCLE.tu; CIRCLE.v = CIRCLE.tv;
       CIRCLE.stopUntil = now + dur(rr(CIRCLE_STOP[0], CIRCLE_STOP[1]));
-      var q = circleRandomPoint(); CIRCLE.tx = q.x; CIRCLE.ty = q.y;
+      CIRCLE.tu = rnd(); CIRCLE.tv = rnd();
       CIRCLE.pace = rr(CIRCLE_PACE[0], CIRCLE_PACE[1]);
+      if (rnd() < CIRCLE_HOP) CIRCLE.hop = { fx: 0, fy: 0, p: 0 };   // следующая перебежка — прыжок
     } else {
-      CIRCLE.x += dx / dist * step; CIRCLE.y += dy / dist * step;
+      var k = step / dist;
+      CIRCLE.u += (CIRCLE.tu - CIRCLE.u) * k; CIRCLE.v += (CIRCLE.tv - CIRCLE.v) * k;
     }
   }
+  if (CIRCLE.hop && CIRCLE.hop.p === 0) { CIRCLE.hop.fx = CIRCLE.x; CIRCLE.hop.fy = CIRCLE.y; }
+  if (!CIRCLE.hop) circlePlace();
+  circleTickRed(mob, now);
+}
 
+// Покраснение и пропущенный красный.
+function circleTickRed(mob, now) {
   // покраснел
   if (!CIRCLE.red && now >= CIRCLE.redAt) {
     CIRCLE.red = { start: now };
@@ -147,10 +202,13 @@ function canvasXY(e) { var r = cv.getBoundingClientRect(); return { x: e.clientX
 
 if (CIRCLE_MODE) {
   cv.style.touchAction = 'none';
+  // кнопки в этой версии не нужны, касания у их края должны доходить до канваса
+  document.getElementById('btn-guard').style.pointerEvents = 'none';
+  document.getElementById('btn-strike').style.pointerEvents = 'none';
   cv.addEventListener('pointerdown', function (e) {
     var p = canvasXY(e);
     var onCircle = !!CIRCLE.mob && Math.hypot(p.x - CIRCLE.x, p.y - CIRCLE.y) <= CIRCLE_HIT_R;
-    CIRCLE.hold = { id: e.pointerId, x0: p.x, y0: p.y, t0: performance.now(), on: onCircle, drag: false, a0: { x: CIRCLE.area.x, y: CIRCLE.area.y } };
+    CIRCLE.hold = { id: e.pointerId, x0: p.x, y0: p.y, t0: performance.now(), on: onCircle, drag: false, a0: { x: CIRCLE.area.x, y: CIRCLE.area.y }, ai: CIRCLE.ai };
     circleTap(p.x, p.y);
   });
   cv.addEventListener('pointermove', function (e) {
@@ -158,12 +216,10 @@ if (CIRCLE_MODE) {
     if (!h || h.id !== e.pointerId || !h.on) return;
     if (!h.drag && performance.now() - h.t0 < CIRCLE_HOLD_MS) return;
     if (!h.drag) { h.drag = true; CIRCLE.coolUntil = 0; }  // это было удержание, а не тычок — откат снимаем
-    var p = canvasXY(e), a = CIRCLE.area;
-    var nx = Math.max(0, Math.min(1 - a.w, h.a0.x + (p.x - h.x0) / W));
-    var ny = Math.max(0, Math.min(1 - a.h, h.a0.y + (p.y - h.y0) / H));
-    var ddx = (nx - a.x) * W, ddy = (ny - a.y) * H;
-    a.x = nx; a.y = ny;
-    CIRCLE.x += ddx; CIRCLE.y += ddy; CIRCLE.tx += ddx; CIRCLE.ty += ddy;   // кружок едет вместе с областью
+    var p = canvasXY(e), a = CIRCLE.areas[h.ai];
+    a.x = Math.max(-0.5, Math.min(0.5, h.a0.x + (p.x - h.x0) / W));
+    a.y = Math.max(-0.8, Math.min(0.1, h.a0.y + (p.y - h.y0) / H));
+    if (CIRCLE.ai === h.ai && !CIRCLE.hop) circlePlace();               // кружок едет вместе с областью
   });
   var holdEnd = function (e) {
     var h = CIRCLE.hold;
@@ -182,13 +238,16 @@ function drawCircle(t) {
   var h = CIRCLE.hold;
   var holding = h && h.on && (h.drag || t - h.t0 >= CIRCLE_HOLD_MS);
   ctx.save();
-  // обе области; та, где кружок, — ярче
+  // обе дуги; та, где кружок, — ярче
   for (var ai = 0; ai < CIRCLE.areas.length; ai++) {
-    var a = CIRCLE.areas[ai], cur = CIRCLE.mob && a === CIRCLE.area;
+    var g = circleArc(ai), cur = CIRCLE.mob && ai === CIRCLE.ai;
     ctx.strokeStyle = cur && holding ? 'rgba(255,210,122,.9)' : (cur ? 'rgba(255,255,255,.32)' : 'rgba(255,255,255,.14)');
     ctx.lineWidth = cur && holding ? 2 : 1.2;
     ctx.setLineDash([6, 6]);
-    ctx.strokeRect(a.x * W, a.y * H, a.w * W, a.h * H);
+    ctx.beginPath();
+    for (var i = 0; i <= 24; i++) { var q = circleArcPoint(g, i / 24, 0); if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); }
+    for (var j = 24; j >= 0; j--) { var o = circleArcPoint(g, j / 24, 1); ctx.lineTo(o.x, o.y); }
+    ctx.closePath(); ctx.stroke();
   }
   ctx.setLineDash([]);
   if (!CIRCLE.mob) { ctx.restore(); return; }
