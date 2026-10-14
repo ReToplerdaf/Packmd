@@ -1,4 +1,4 @@
-// Версия «кружок» (index.html?circle): все мобы — кружок; он бегает по области,
+// Версия «кружок» (index.html?circle): все мобы — кружок; он бегает в одной из двух областей,
 // краснеет; касание по красному убивает моба, не успел — урон герою; тычок
 // мимо или по зелёному — откат; удержание на кружке двигает область.
 // Касания — настоящими событиями pointer по канвасу.
@@ -82,7 +82,7 @@ async function until(page, fn, max = 2000) {
     cv.dispatchEvent(new PointerEvent('pointerup', o));
   });
   s = await st(g.page);
-  const stored = await g.page.evaluate(() => JSON.parse(localStorage.getItem('arena.circle.area')));
+  const stored = await g.page.evaluate(() => (JSON.parse(localStorage.getItem('arena.circle.areas')) || [])[CIRCLE.ai]);
   check('удержание на кружке двигает область и она запоминается', s.area.x < a0.x && s.area.y < a0.y && stored && stored.y === s.area.y && !s.cool, [a0, s.area]);
   await g.page.screenshot({ path: path.join(OUT, 'circle-moved.png') });
   check('нет ошибок в консоли', g.errors.length === 0, g.errors);

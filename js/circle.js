@@ -1,8 +1,9 @@
-// Версия «кружок» (index.html?circle): у переднего моба по области экрана
-// мельтешит зелёный кружок с остановками, в случайный момент краснеет —
+// Версия «кружок» (index.html?circle): у переднего моба в одной из двух
+// небольших областей (над кнопкой блока и над кнопкой удара) мельтешит
+// зелёный кружок с остановками, в случайный момент краснеет —
 // пока он красный, по нему надо ударить пальцем. Попал — моб умирает, не
 // успел — урон герою. Тычок мимо или по зелёному — откат (циферблат).
-// Долгое удержание на кружке — двигать саму область.
+// Долгое удержание на кружке — двигать ту область, где он сейчас.
 "use strict";
 
 /* ── Состояние ───────────────────────────────────────────────────── */
@@ -10,23 +11,27 @@
 var CIRCLE_R = 24;             // радиус кружка на экране
 var CIRCLE_HIT_R = 40;         // радиус, в котором касание засчитывается
 var CIRCLE_HOLD_MS = 450;      // столько держать палец на кружке, чтобы двигать область
-var CIRCLE_STOP = [200, 700];  // остановки между перебежками (игровые мс)
-var CIRCLE_AREA_KEY = 'arena.circle.area';
-// Область — доли ширины и высоты канваса. По умолчанию — пол перед мобом.
-var CIRCLE_AREA_DEFAULT = { x: 0.08, y: 0.52, w: 0.84, h: 0.2 };
+var CIRCLE_STOP = [100, 1100]; // остановки между перебежками (игровые мс), каждая — своя
+var CIRCLE_PACE = [0.5, 1.8];  // скорость каждой перебежки — circleSpeed × случайное из этих
+var CIRCLE_AREA_KEY = 'arena.circle.areas';
+// Две области — доли ширины и высоты канваса: над кнопкой блока и над кнопкой удара.
+// Каждый новый кружок (новый моб или после пропущенного красного) — в случайной из них.
+var CIRCLE_AREAS_DEFAULT = [{ x: 0.03, y: 0.585, w: 0.4, h: 0.135 }, { x: 0.57, y: 0.585, w: 0.4, h: 0.135 }];
 
 var CIRCLE = {
   mob: null,                   // передний моб, которому принадлежит кружок
   x: 0, y: 0, tx: 0, ty: 0,    // где кружок и куда бежит
   stopUntil: 0, last: 0,
   redAt: 0, redUntil: 0, red: null,   // red — текущая «угроза» (объект на каждое покраснение)
-  coolStart: 0, coolUntil: 0,
-  area: CIRCLE_AREA_DEFAULT, hold: null
+  coolStart: 0, coolUntil: 0, pace: 1,
+  areas: CIRCLE_AREAS_DEFAULT.map(function (a) { return { x: a.x, y: a.y, w: a.w, h: a.h }; }),
+  ai: 0, area: null, hold: null
 };
 try {
-  var savedArea = JSON.parse(localStorage.getItem(CIRCLE_AREA_KEY) || 'null');
-  if (savedArea && savedArea.w > 0 && savedArea.h > 0) CIRCLE.area = savedArea;
+  var savedAreas = JSON.parse(localStorage.getItem(CIRCLE_AREA_KEY) || 'null');
+  if (savedAreas && savedAreas.length === 2 && savedAreas.every(function (a) { return a && a.w > 0 && a.h > 0; })) CIRCLE.areas = savedAreas;
 } catch (e) {}
+CIRCLE.area = CIRCLE.areas[0];
 
 function circleRect() {
   var a = CIRCLE.area;
@@ -44,9 +49,15 @@ function circlePack() {
   CIRCLE.mob = null;
 }
 
+// Новый кружок — в случайной из двух областей.
+function circlePickArea() {
+  CIRCLE.ai = rnd() < 0.5 ? 0 : 1;
+  CIRCLE.area = CIRCLE.areas[CIRCLE.ai];
+}
 function circleReset(mob, now) {
+  circlePickArea();
   var p = circleRandomPoint(), q = circleRandomPoint();
-  CIRCLE.mob = mob;
+  CIRCLE.mob = mob; CIRCLE.pace = rr(CIRCLE_PACE[0], CIRCLE_PACE[1]);
   CIRCLE.x = p.x; CIRCLE.y = p.y; CIRCLE.tx = q.x; CIRCLE.ty = q.y;
   CIRCLE.stopUntil = 0; CIRCLE.last = now;
   CIRCLE.red = null; CIRCLE.redAt = now + dur(circleGreenMs());
@@ -67,11 +78,12 @@ function circleTick(mob, now) {
   // перебежки с остановками
   if (now >= CIRCLE.stopUntil) {
     var dx = CIRCLE.tx - CIRCLE.x, dy = CIRCLE.ty - CIRCLE.y, dist = Math.hypot(dx, dy);
-    var step = TUNE.circleSpeed / 1000 * dt * (TUNE.speed || 1);
+    var step = TUNE.circleSpeed * CIRCLE.pace / 1000 * dt * (TUNE.speed || 1);
     if (dist <= step) {
       CIRCLE.x = CIRCLE.tx; CIRCLE.y = CIRCLE.ty;
       CIRCLE.stopUntil = now + dur(rr(CIRCLE_STOP[0], CIRCLE_STOP[1]));
       var q = circleRandomPoint(); CIRCLE.tx = q.x; CIRCLE.ty = q.y;
+      CIRCLE.pace = rr(CIRCLE_PACE[0], CIRCLE_PACE[1]);
     } else {
       CIRCLE.x += dx / dist * step; CIRCLE.y += dy / dist * step;
     }
@@ -86,8 +98,7 @@ function circleTick(mob, now) {
   }
   // не успели — моб бьёт
   if (CIRCLE.red && now > CIRCLE.redUntil) {
-    CIRCLE.red = null;
-    CIRCLE.redAt = now + dur(circleGreenMs());
+    circleReset(mob, now);                               // следующий кружок — снова в случайной области
     comboBreak(true);
     S.tm.taken++;
     var dmg = damage(mobAtk(mob), S.stats.def, CRIT_MULT);
@@ -158,7 +169,7 @@ if (CIRCLE_MODE) {
     var h = CIRCLE.hold;
     if (!h || h.id !== e.pointerId) return;
     CIRCLE.hold = null;
-    if (h.drag) { try { localStorage.setItem(CIRCLE_AREA_KEY, JSON.stringify(CIRCLE.area)); } catch (err) {} }
+    if (h.drag) { try { localStorage.setItem(CIRCLE_AREA_KEY, JSON.stringify(CIRCLE.areas)); } catch (err) {} }
   };
   cv.addEventListener('pointerup', holdEnd);
   cv.addEventListener('pointercancel', holdEnd);
@@ -168,14 +179,17 @@ if (CIRCLE_MODE) {
 
 function drawCircle(t) {
   if (S.phase !== 'fight' && S.phase !== 'dead') return;
-  var r = circleRect(), h = CIRCLE.hold;
+  var h = CIRCLE.hold;
   var holding = h && h.on && (h.drag || t - h.t0 >= CIRCLE_HOLD_MS);
   ctx.save();
-  // область
-  ctx.strokeStyle = holding ? 'rgba(255,210,122,.9)' : 'rgba(255,255,255,.22)';
-  ctx.lineWidth = holding ? 2 : 1.2;
-  ctx.setLineDash([6, 6]);
-  ctx.strokeRect(r.x, r.y, r.w, r.h);
+  // обе области; та, где кружок, — ярче
+  for (var ai = 0; ai < CIRCLE.areas.length; ai++) {
+    var a = CIRCLE.areas[ai], cur = CIRCLE.mob && a === CIRCLE.area;
+    ctx.strokeStyle = cur && holding ? 'rgba(255,210,122,.9)' : (cur ? 'rgba(255,255,255,.32)' : 'rgba(255,255,255,.14)');
+    ctx.lineWidth = cur && holding ? 2 : 1.2;
+    ctx.setLineDash([6, 6]);
+    ctx.strokeRect(a.x * W, a.y * H, a.w * W, a.h * H);
+  }
   ctx.setLineDash([]);
   if (!CIRCLE.mob) { ctx.restore(); return; }
 
