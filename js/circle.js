@@ -233,16 +233,60 @@ if (CIRCLE_MODE) {
 
 /* ── Отрисовка ───────────────────────────────────────────────────── */
 
+// Летучая мышь — вместо кружка: тело и крылья цвета кружка (зелёный / красный).
+// В полёте машет крыльями часто, на остановке — медленно, крылья полусложены.
+var BAT_SPAN = 34;             // полуразмах крыльев, px
+function drawBat(x, y, t, color, glow, scale) {
+  var flying = !!CIRCLE.hop || performance.now() >= CIRCLE.stopUntil;
+  var flap = Math.sin(t / (flying ? 38 : 160));            // −1 … 1
+  var lift = flap * (flying ? 0.55 : 0.18);               // взмах: концы крыльев вверх/вниз
+  var span = BAT_SPAN * scale * (flying ? 1 : 0.82);
+  ctx.save();
+  ctx.translate(x, y + (flying ? -flap * 2 : 0));
+  ctx.shadowColor = color; ctx.shadowBlur = glow;
+  ctx.fillStyle = color;
+  for (var side = -1; side <= 1; side += 2) {
+    var tipX = side * span, tipY = -span * (0.35 + lift);
+    ctx.beginPath();
+    ctx.moveTo(side * 6, -6);
+    ctx.quadraticCurveTo(side * span * 0.5, -span * (0.55 + lift * 0.8), tipX, tipY);   // верхний край
+    // нижний край — фестонами («пальцы» крыла)
+    var px = [0.78, 0.52, 0.27], py = [0.15, 0.22, 0.18];
+    var prevX = tipX, prevY = tipY;
+    for (var i = 0; i < 3; i++) {
+      var nx = side * span * px[i], ny = span * py[i] - span * lift * px[i] * 0.6;
+      ctx.quadraticCurveTo((prevX + nx) / 2, (prevY + ny) / 2 - span * 0.16, nx, ny);
+      prevX = nx; prevY = ny;
+    }
+    ctx.quadraticCurveTo(side * 8, 6, side * 5, 8);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+  // тело, уши
+  ctx.beginPath(); ctx.ellipse(0, 1, 9 * scale, 13 * scale, 0, 0, 6.2832); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-7, -8); ctx.lineTo(-5, -20 * scale); ctx.lineTo(-1, -10);
+  ctx.moveTo(7, -8); ctx.lineTo(5, -20 * scale); ctx.lineTo(1, -10);
+  ctx.fill();
+  // тёмная окантовка, глаза
+  ctx.strokeStyle = 'rgba(10,12,18,.55)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.ellipse(0, 1, 9 * scale, 13 * scale, 0, 0, 6.2832); ctx.stroke();
+  ctx.fillStyle = '#14161e';
+  ctx.beginPath(); ctx.arc(-3.5, -3, 2.2, 0, 6.2832); ctx.arc(3.5, -3, 2.2, 0, 6.2832); ctx.fill();
+  ctx.restore();
+}
+
 function drawCircle(t) {
   if (S.phase !== 'fight' && S.phase !== 'dead') return;
   var h = CIRCLE.hold;
   var holding = h && h.on && (h.drag || t - h.t0 >= CIRCLE_HOLD_MS);
   ctx.save();
-  // обе дуги; та, где кружок, — ярче
+  // рамка дуги видна только пока её двигают удержанием
   for (var ai = 0; ai < CIRCLE.areas.length; ai++) {
-    var g = circleArc(ai), cur = CIRCLE.mob && ai === CIRCLE.ai;
-    ctx.strokeStyle = cur && holding ? 'rgba(255,210,122,.9)' : (cur ? 'rgba(255,255,255,.32)' : 'rgba(255,255,255,.14)');
-    ctx.lineWidth = cur && holding ? 2 : 1.2;
+    var g = circleArc(ai);
+    if (!(holding && ai === h.ai)) continue;
+    ctx.strokeStyle = 'rgba(255,210,122,.9)';
+    ctx.lineWidth = 2;
     ctx.setLineDash([6, 6]);
     ctx.beginPath();
     for (var i = 0; i <= 24; i++) { var q = circleArcPoint(g, i / 24, 0); if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); }
@@ -256,17 +300,11 @@ function drawCircle(t) {
   if (CIRCLE.red) {
     var left = Math.max(0, (CIRCLE.redUntil - t) / Math.max(1, CIRCLE.redUntil - CIRCLE.red.start));
     var pulse = 1 + 0.08 * Math.sin(t / 45);
-    ctx.shadowColor = '#ff3b30'; ctx.shadowBlur = 22;
-    ctx.fillStyle = '#ff3b30';
-    ctx.beginPath(); ctx.arc(x, y, CIRCLE_R * pulse, 0, 6.2832); ctx.fill();
-    ctx.shadowBlur = 0;
+    drawBat(x, y, t, '#ff3b30', 22, pulse);
     ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(x, y, CIRCLE_R + 7, -Math.PI / 2, -Math.PI / 2 + 6.2832 * left); ctx.stroke();
   } else {
-    ctx.shadowColor = '#4cd964'; ctx.shadowBlur = 14;
-    ctx.fillStyle = '#4cd964';
-    ctx.beginPath(); ctx.arc(x, y, CIRCLE_R, 0, 6.2832); ctx.fill();
-    ctx.shadowBlur = 0;
+    drawBat(x, y, t, '#4cd964', 14, 1);
   }
 
   // откат — циферблат поверх кружка: тёмный сектор убывает по часовой

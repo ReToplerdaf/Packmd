@@ -15,7 +15,7 @@ var TUNE_DEFAULTS = { lead: 500, guard: 150, cool: 900, critRate: 0.85, shieldRa
   autoAfter: 15000, autoBlock: 0.35,
   combo: true, perfect: 0.4,
   biomes: true, bossEvery: 10, biomePin: true, chief: true,
-  circleRed: 700, circleCool: 900, circleSpeed: 220, circleGreen: 3000 };
+  circleRed: 700, circleCool: 900, circleSpeed: 440, circleGreen: 3000 };
 var TUNE = JSON.parse(JSON.stringify(TUNE_DEFAULTS));
 
 var CRIT_MULT = 2.5;        // во сколько раз крит моба больнее обычного удара
@@ -66,6 +66,8 @@ try {
   // разовая миграция: красный больше не тратит ходы на блок, крит подняли до 85%
   if (saved && !saved.critMig && TUNE.critRate <= 0.7) TUNE.critRate = 0.85;
   TUNE.critMig = 1;
+  // разовая миграция: «кружок» стал вдвое быстрее
+  if (CIRCLE_MODE) { if (saved && !saved.circleMig && TUNE.circleSpeed === 220) TUNE.circleSpeed = 440; TUNE.circleMig = 1; }
 } catch (e) { /* приватное окно — просто идём с умолчаниями */ }
 
 if (CIRCLE_MODE) TUNE.biomes = false;   // в «кружке» — только эта механика
