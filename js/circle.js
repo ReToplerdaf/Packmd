@@ -35,7 +35,7 @@ var CIRCLE = {
   areas: [{ x: 0, y: 0 }, { x: 0, y: 0 }],
   ai: 0, area: null, hold: null
 };
-try {
+if (CIRCLE_MODE) try {
   var savedAreas = JSON.parse(localStorage.getItem(CIRCLE_AREA_KEY) || 'null');
   if (savedAreas && savedAreas.length === 2 && savedAreas.every(function (a) { return a && isFinite(a.x) && isFinite(a.y); })) CIRCLE.areas = savedAreas;
 } catch (e) {}
@@ -99,6 +99,39 @@ function circleReset(mob, now) {
 function circleShift(d) {
   CIRCLE.stopUntil += d; CIRCLE.last += d; CIRCLE.redAt += d; CIRCLE.redUntil += d;
   CIRCLE.coolStart += d; CIRCLE.coolUntil += d;
+  if (RAID.at) RAID.at += d;
+}
+
+/* ── Налёт летучих мышей (основная игра) ─────────────────────────── */
+
+// Посреди боя время от времени (TUNE.batEvery, ±30%) прилетает летучая мышь —
+// тот же «кружок»: бегает по дугам у кнопок, перепрыгивает между ними, краснеет.
+// Пока она в дуге у кнопки, эта кнопка не работает (и авто-блок/авто-раскол
+// по ней тоже). Урона мышь не наносит. Касание по красной — мышь убита,
+// кнопка свободна; не успел — просто следующий круг. Одна мышь за раз.
+var RAID = { at: 0 };          // когда прилетит следующая (0 — ещё не назначено)
+function raidOn() { return !CIRCLE_MODE && TUNE.bats && !S.tut; }
+function raidNext(now) { RAID.at = now + dur(TUNE.batEvery * rr(0.7, 1.3)); }
+function raidClear() { CIRCLE.mob = null; CIRCLE.red = null; CIRCLE.hop = null; RAID.at = 0; }
+// Кнопку 'guard' или 'strike' держит мышь?
+function batBlocks(which) {
+  return !CIRCLE_MODE && !!CIRCLE.mob && !CIRCLE.hop && CIRCLE.ai === (which === 'strike' ? 1 : 0);
+}
+// Каждый кадр боя.
+function raidTick(now) {
+  if (!raidOn()) { if (CIRCLE.mob) raidClear(); return; }
+  if (!CIRCLE.mob) {
+    if (!RAID.at) { raidNext(now); return; }
+    if (now < RAID.at) return;
+    // прилетает сверху в случайную дугу
+    circleReset({ bat: true }, now);
+    var target = CIRCLE.ai;
+    CIRCLE.ai = 1 - target; CIRCLE.area = CIRCLE.areas[CIRCLE.ai];
+    CIRCLE.hop = { fx: W * rr(0.3, 0.7), fy: -40, p: 0.001 };
+    CIRCLE.x = CIRCLE.hop.fx; CIRCLE.y = CIRCLE.hop.fy;
+    sfx('shield');
+  }
+  circleTick(CIRCLE.mob, now);
 }
 
 /* ── Ход кружка (каждый кадр боя) ────────────────────────────────── */
@@ -151,6 +184,11 @@ function circleTickRed(mob, now) {
     sfx('telegraph');
     if (autoBlocks()) { circleKill(now, false); return; }   // авто: с шансом бьёт сам
   }
+  // не успели: мышь налёта урона не наносит — просто следующий круг
+  if (CIRCLE.red && now > CIRCLE.redUntil && !CIRCLE_MODE) {
+    CIRCLE.red = null; CIRCLE.redAt = now + dur(circleGreenMs());
+    return;
+  }
   // не успели — моб бьёт
   if (CIRCLE.red && now > CIRCLE.redUntil) {
     circleReset(mob, now);                               // следующий кружок — снова в случайной области
@@ -180,6 +218,7 @@ function circleKill(now, manual) {
   S.flash = 0.6; S.flashColor = '#3fdcc4';
   sfx('block');
   CIRCLE.red = null; CIRCLE.mob = null;
+  if (!CIRCLE_MODE) { CIRCLE.hop = null; raidNext(now); return; }   // мышь налёта: кнопка свободна
   mob.hp = 0; mob.hurt = performance.now();
   killMob(mob);
 }
@@ -199,6 +238,18 @@ function circleTap(x, y) {
 }
 
 function canvasXY(e) { var r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+
+// Основная игра: касание по мыши важнее кнопки под ней. Ловим раньше всех
+// (фаза перехвата на window), остальные касания идут как обычно.
+if (!CIRCLE_MODE) {
+  window.addEventListener('pointerdown', function (e) {
+    if (!CIRCLE.mob || S.paused || S.phase !== 'fight') return;
+    var p = canvasXY(e);
+    if (Math.hypot(p.x - CIRCLE.x, p.y - CIRCLE.y) > CIRCLE_HIT_R) return;
+    e.preventDefault(); e.stopPropagation();
+    circleTap(p.x, p.y);
+  }, true);
+}
 
 if (CIRCLE_MODE) {
   cv.style.touchAction = 'none';
@@ -278,6 +329,7 @@ function drawBat(x, y, t, color, glow, scale) {
 
 function drawCircle(t) {
   if (S.phase !== 'fight' && S.phase !== 'dead') return;
+  if (!CIRCLE_MODE && !CIRCLE.mob) return;
   var h = CIRCLE.hold;
   var holding = h && h.on && (h.drag || t - h.t0 >= CIRCLE_HOLD_MS);
   ctx.save();

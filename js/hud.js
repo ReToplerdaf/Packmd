@@ -64,6 +64,8 @@ function buttonCues(t) {
   }
   el.guard.style.setProperty('--cue', gNow ? 1 : gNeed.toFixed(3));
   el.strike.style.setProperty('--cue', sNow ? 1 : sNeed.toFixed(3));
+  el.guard.classList.toggle('bat-blocked', batBlocks('guard'));
+  el.strike.classList.toggle('bat-blocked', batBlocks('strike'));
   el.guard.classList.toggle('cue-now', gNow);
   el.strike.classList.toggle('cue-now', sNow);
 }

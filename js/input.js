@@ -8,6 +8,7 @@ function pressGuard() {
   var now = performance.now();
   autoTouch();
   unlockAudio();
+  if (batBlocks('guard')) { batBlockedPress(); return; }   // кнопку держит летучая мышь
 
   // Усталость от спама: больше 3 нажатий подряд быстро — откат ×2, а если
   // спам продолжается, пока эта усталость ещё не истекла — держим ×4
@@ -69,6 +70,12 @@ function breakShield(mob, now) {
   }
 }
 
+// Нажатие на кнопку, которую держит летучая мышь налёта: ничего не происходит.
+function batBlockedPress() {
+  sfx('miss');
+  floatText('МЫШЬ', '#8a90a6', 0, 0, false);
+}
+
 // «Удар» — не свободный источник урона: он либо добивает контратакой после
 // блока, либо ловит пульс щита. Вне этих двух окон нажатие ничего не даёт —
 // обычный урон идёт только от авто-атаки героя.
@@ -84,6 +91,7 @@ function pressStrike() {
   // антидребезг — в реальном времени, не зависит от скорости боя
   S.strikeCoolAt = now + STRIKE_DEBOUNCE_MS;
   unlockAudio();
+  if (batBlocks('strike')) { batBlockedPress(); return; }  // кнопку держит летучая мышь
   var mob = front();
   if (!mob || S.phase !== 'fight') return;
 

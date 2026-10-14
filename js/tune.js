@@ -15,7 +15,8 @@ var TUNE_DEFAULTS = { lead: 500, guard: 150, cool: 900, critRate: 0.85, shieldRa
   autoAfter: 15000, autoBlock: 0.35,
   combo: true, perfect: 0.4,
   biomes: true, bossEvery: 10, biomePin: true, chief: true,
-  circleRed: 700, circleCool: 900, circleSpeed: 440, circleGreen: 3000 };
+  circleRed: 700, circleCool: 900, circleSpeed: 440, circleGreen: 3000,
+  bats: true, batEvery: 15000 };
 var TUNE = JSON.parse(JSON.stringify(TUNE_DEFAULTS));
 
 var CRIT_MULT = 2.5;        // во сколько раз крит моба больнее обычного удара

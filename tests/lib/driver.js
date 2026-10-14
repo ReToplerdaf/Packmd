@@ -104,7 +104,7 @@
     if (S.paused || S.phase !== 'fight' || !b.skill) return;
 
     // «Кружок»: касание по красному кружку в середине окна (настоящим касанием канваса).
-    var cr = typeof CIRCLE === 'object' && CIRCLE_MODE ? CIRCLE : null;
+    var cr = typeof CIRCLE === 'object' && CIRCLE.mob ? CIRCLE : null;
     if (cr && cr.red && cr.mob && !done.has(cr.red)) {
       var rhalf = (cr.redUntil - cr.red.start) / 2;
       if (now >= cr.red.start + rhalf + offset(cr.red, rhalf, b)) {

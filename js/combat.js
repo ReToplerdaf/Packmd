@@ -191,6 +191,7 @@ function heroDies(now) {
     return;
   }
   S.phase = 'dead';
+  if (!CIRCLE_MODE) raidClear();   // мышь налёта улетает
   S.phaseUntil = Infinity;         // ждёт «Дальше» в кадре смерти
   S.tm.deaths++;
   S.deathStreak++;
@@ -262,7 +263,7 @@ function shiftTimers(d) {
   S.counterUntil += d; S.strikeCoolAt += d; S.phaseUntil += d;
   if (S.telegraph) { S.telegraph.start += d; S.telegraph.hitAt += d; }
   if (BIOME.banner) BIOME.banner.start += d;
-  if (CIRCLE_MODE) circleShift(d);
+  circleShift(d);
   for (var i = 0; i < S.pack.length; i++) {
     var m = S.pack[i];
     if (m.staggerUntil) m.staggerUntil += d;
@@ -327,7 +328,7 @@ function resolveCrit(now) {
 
   // В авто герой сам ловит часть критов — тот же блок, что и от кнопки
   // (окно контры откроется, но жать её будет некому).
-  if (now < S.guardUntil || autoBlocks()) {
+  if (now < S.guardUntil || (!batBlocks('guard') && autoBlocks())) {
     // Заблокировано: урона нет, моб оглушён, открылось окно контратаки.
     S.tm.blocked++;
     if (S.guardPressedAt > tg.start) S.tm.react.push(S.guardPressedAt - tg.start);
@@ -390,7 +391,7 @@ function resolveRanged(mob, now) {
   var meleeClash = !!S.telegraph;
   var deflected = !meleeClash && now < S.guardUntil;
   // Авто-блок выстрел гасит, но в моба не отбивает — это заслуга кнопки.
-  var absorbed = !deflected && autoBlocks();
+  var absorbed = !deflected && !batBlocks('guard') && autoBlocks();
   var enraged = (mob.rangedRage || 0) > 0;
   var dmg = damage(mobAtk(mob) * RANGED_FRAC * (enraged ? RANGED_RAGE_MULT : 1), S.stats.def, 1);
   mob.rangedRage = 0;               // яростный выстрел сделан — ярость прошла
@@ -543,6 +544,7 @@ function step(now) {
   if (!mob) { S.phase = 'walk'; S.phaseUntil = now + dur(900); return; }
   if (mob.chief) chiefTick(mob, now);
   if (CIRCLE_MODE) { circleTick(mob, now); return; }   // «кружок»: ни авто-атаки, ни ходов моба
+  raidTick(now);                                         // налёт летучих мышей
 
   // Моб дошёл до фронта уже со щитом, но без активного пульса (жёлтый —
   // щит у него поднят с самого спавна) — запускаем отсчёт только теперь,
@@ -553,7 +555,7 @@ function step(now) {
   // иначе жёлтый со щитом стоит перед пассивным героем бесконечно.
   if (mob.shield && mob.pulse && !mob.pulse.autoTried && AUTO.on && now >= mob.pulse.hitAt) {
     mob.pulse.autoTried = true;
-    if (autoBlocks()) breakShield(mob, now);
+    if (!batBlocks('strike') && autoBlocks()) breakShield(mob, now);
   }
 
   // Пульс щита не пойман вовремя — щит остаётся, моб злится, пульс заново.

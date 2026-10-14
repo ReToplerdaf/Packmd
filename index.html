@@ -164,6 +164,10 @@
               <input type="range" id="s-packmax" min="2" max="10" step="1" value="5">
             </div>
             <div class="tune-row">
+              <label for="s-batevery">Мышь прилетает раз в</label><output id="o-batevery">15 с</output>
+              <input type="range" id="s-batevery" min="5000" max="60000" step="1000" value="15000">
+            </div>
+            <div class="tune-row">
               <label for="s-bossevery">Длина биома, стай</label><output id="o-bossevery">10</output>
               <input type="range" id="s-bossevery" min="3" max="20" step="1" value="10">
             </div>
@@ -199,6 +203,7 @@
               <label><input type="checkbox" id="c-combo" checked> Серия и бонус к опыту</label>
               <label><input type="checkbox" id="c-biomes" checked> Биомы</label>
               <label><input type="checkbox" id="c-biomepin" checked> Отступление не уводит в прошлый биом</label>
+              <label><input type="checkbox" id="c-bats" checked> Налёт летучих мышей</label>
             </div>
             <div class="tune-export">
               <button type="button" class="prompt-btn" id="tune-export">Скопировать мои настройки</button>

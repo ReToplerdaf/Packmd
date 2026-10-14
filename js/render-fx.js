@@ -224,7 +224,7 @@ function render(t) {
     ctx.restore();
   }
   ctx.restore();
-  if (CIRCLE_MODE) drawCircle(t);
+  drawCircle(t);                       // «кружок» или мышь налёта
   drawRangedShots(gy, t);
   drawDeflects(t);
 
