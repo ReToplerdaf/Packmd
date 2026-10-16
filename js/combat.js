@@ -84,7 +84,7 @@ function enrageMob(mob) {
   floatText('ЗЛИТСЯ', '#ff6a4d', 0, 0, false);
 }
 
-function mobAtk(mob) { return mob.atk * (1 + TUNE.rageStep * (mob.rage || 0)); }
+function mobAtk(mob) { return mob.atk * (1 + TUNE.rageStep * (mob.rage || 0)) * chiefAtkMult(mob); }
 
 function bossMob() {
   for (var i = 0; i < S.pack.length; i++) if (S.pack[i].leader) return S.pack[i];
@@ -170,6 +170,7 @@ function killMob(mob) {
   // переходит на следующего моба «бесплатно», гасим его.
   if (S.counterMob === mob) { S.counterUntil = 0; S.counterMob = null; }
   S.kills++;
+  if (mob.chief) { pushInfo({ kind: 'chief', biome: BIOME.pack || 0 }); markSave(); }
   grantXp(comboXp(mob.xp));        // серия даёт бонус к опыту
   dropFrom(mob);
   if (S.telegraph && S.telegraph.mob === mob) S.telegraph = null;
@@ -190,6 +191,7 @@ function heroDies(now) {
     return;
   }
   S.phase = 'dead';
+  if (!CIRCLE_MODE) raidClear();   // мышь налёта улетает
   S.phaseUntil = Infinity;         // ждёт «Дальше» в кадре смерти
   S.tm.deaths++;
   S.deathStreak++;
@@ -260,6 +262,8 @@ function shiftTimers(d) {
   for (var gp = 0; gp < S.guardPressStamps.length; gp++) S.guardPressStamps[gp] += d;
   S.counterUntil += d; S.strikeCoolAt += d; S.phaseUntil += d;
   if (S.telegraph) { S.telegraph.start += d; S.telegraph.hitAt += d; }
+  if (BIOME.banner) BIOME.banner.start += d;
+  circleShift(d);
   for (var i = 0; i < S.pack.length; i++) {
     var m = S.pack[i];
     if (m.staggerUntil) m.staggerUntil += d;
@@ -302,7 +306,7 @@ function resolvePrompt(choice, auto) {
   hidePrompt();
   S.deathStreak = 0;
   if (choice === 'retreat') {
-    S.progress = Math.max(-4, S.progress - 3);
+    S.progress = Math.max(retreatFloor(), S.progress - 3);
     S.resist = Math.max(0, S.resist - 2);
     if (S.resist === 0) S.memLeft = 0;
     pushLog(auto ? { kind: 'retreat', progress: S.progress, auto: true } : { kind: 'retreat', progress: S.progress });
@@ -324,7 +328,7 @@ function resolveCrit(now) {
 
   // В авто герой сам ловит часть критов — тот же блок, что и от кнопки
   // (окно контры откроется, но жать её будет некому).
-  if (now < S.guardUntil || autoBlocks()) {
+  if (now < S.guardUntil || (!batBlocks('guard') && autoBlocks())) {
     // Заблокировано: урона нет, моб оглушён, открылось окно контратаки.
     S.tm.blocked++;
     if (S.guardPressedAt > tg.start) S.tm.react.push(S.guardPressedAt - tg.start);
@@ -337,6 +341,11 @@ function resolveCrit(now) {
     sfx('block');
     floatText(perfect ? 'ИДЕАЛЬНО' : 'БЛОК', perfect ? '#ffd27a' : '#3fdcc4', 0, 0, true);
 
+    if (tg.first) {
+      // Первый удар двойного удара главаря: блок гасит урон, но окна
+      // контратаки не даёт — оно откроется после второго блока.
+      mob.staggerUntil = 0; S.counterUntil = 0; S.counterMob = null;
+    }
     var reflect = S.stats.blockReward;
     if (reflect > 0) hitMob(mob, reflect * 0.9);
   } else {
@@ -348,12 +357,17 @@ function resolveCrit(now) {
     sfx('crit');
     floatText('−' + dmg, '#ff7a63', -1, 0, true);
     if (S.hp <= 0) { S.hp = 0; heroDies(now); }
-    else if (TUNE.adapt && mob.hp > 0 && mob.hp / mob.maxHp < RETREAT_FRAC) {
+    else if (TUNE.adapt && !mob.chief && mob.hp > 0 && mob.hp / mob.maxHp < RETREAT_FRAC) {
       retreatBehindProtector(mob, now);
     }
     // Жёлтый моб: пропущенная реакция на его крит после снятия щита
     // усиливает боса дополнительно — со всеми последствиями, вплоть до побега.
     if (tg.yellowFollow) enrageBoss(now);
+  }
+  // Двойной удар: за первым сразу второй замах.
+  if (tg.first && mob.hp > 0 && S.phase === 'fight' && S.pack.indexOf(mob) >= 0) {
+    S.telegraph = { start: now, hitAt: now + dur(CHIEF_DOUBLE_GAP), mob: mob };
+    sfx('telegraph');
   }
   dirty.stats = true;
 }
@@ -377,7 +391,7 @@ function resolveRanged(mob, now) {
   var meleeClash = !!S.telegraph;
   var deflected = !meleeClash && now < S.guardUntil;
   // Авто-блок выстрел гасит, но в моба не отбивает — это заслуга кнопки.
-  var absorbed = !deflected && autoBlocks();
+  var absorbed = !deflected && !batBlocks('guard') && autoBlocks();
   var enraged = (mob.rangedRage || 0) > 0;
   var dmg = damage(mobAtk(mob) * RANGED_FRAC * (enraged ? RANGED_RAGE_MULT : 1), S.stats.def, 1);
   mob.rangedRage = 0;               // яростный выстрел сделан — ярость прошла
@@ -528,6 +542,9 @@ function step(now) {
 
   var mob = front();
   if (!mob) { S.phase = 'walk'; S.phaseUntil = now + dur(900); return; }
+  if (mob.chief) chiefTick(mob, now);
+  if (CIRCLE_MODE) { circleTick(mob, now); return; }   // «кружок»: ни авто-атаки, ни ходов моба
+  raidTick(now);                                         // налёт летучих мышей
 
   // Моб дошёл до фронта уже со щитом, но без активного пульса (жёлтый —
   // щит у него поднят с самого спавна) — запускаем отсчёт только теперь,
@@ -538,7 +555,7 @@ function step(now) {
   // иначе жёлтый со щитом стоит перед пассивным героем бесконечно.
   if (mob.shield && mob.pulse && !mob.pulse.autoTried && AUTO.on && now >= mob.pulse.hitAt) {
     mob.pulse.autoTried = true;
-    if (autoBlocks()) breakShield(mob, now);
+    if (!batBlocks('strike') && autoBlocks()) breakShield(mob, now);
   }
 
   // Пульс щита не пойман вовремя — щит остаётся, моб злится, пульс заново.
@@ -571,7 +588,7 @@ function step(now) {
   }
 
   if (now >= S.mobSwingAt) {
-    S.mobSwingAt = now + dur(TUNE.mobRate * rr(0.85, 1.15));
+    S.mobSwingAt = now + dur(TUNE.mobRate * rr(0.85, 1.15) * chiefRateMult(mob));
     if (mob.shield || (mob.type === 'healer' && mob.healPulse)) {
       // Пока щит не разбит (или канал лечения не прерван) — моб держит его
       // и не замахивается ни на крит, ни на обычный удар. Иначе получался
@@ -591,14 +608,14 @@ function step(now) {
     mob.noShieldNext = false;
     // Красный (обычный) моб сам в блок не встаёт — только когда прикрывает
     // раненого (см. retreatBehindProtector). Случайный щит — лишь у жёлтого.
-    if (TUNE.adapt && canShield && mob.type !== 'normal' && rnd() < TUNE.shieldRate) {
+    if (TUNE.adapt && canShield && (mob.type === 'yellow' || mob.chiefPhase === 2) && rnd() < TUNE.shieldRate) {
       mob.shield = true;
       mob.pulse = { start: now, hitAt: now + dur(PULSE_LEAD) };
       S.flash = 0.4; S.flashColor = '#4a9fe8';
       sfx('shield');
       floatText('ЩИТ', '#4a9fe8', 0, 0, false);
     } else if (rnd() < TUNE.critRate) {
-      S.telegraph = { start: now, hitAt: now + dur(TUNE.lead), mob: mob };
+      S.telegraph = { start: now, hitAt: now + dur(biomeLead() * chiefLeadMult(mob)), mob: mob };
       sfx('telegraph');
     } else {
       mobNormalHit(now, mob);

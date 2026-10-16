@@ -22,6 +22,7 @@
     <!-- Номер чекпоинта — бейдж в верхнем левом углу, как уровень справа -->
     <div class="hud-level hud-cp" id="hud-cp">
       <div class="cp-stack" aria-hidden="true"><i></i><i></i><i></i></div>
+      <i class="cp-biome" id="cp-biome" hidden></i>
       <div class="k">стая</div>
       <div class="n" id="cp">0</div>
       <div class="kills" id="cp-mem" hidden>память ×<b id="cp-mem-n">0</b></div>
@@ -163,6 +164,30 @@
               <input type="range" id="s-packmax" min="2" max="10" step="1" value="5">
             </div>
             <div class="tune-row">
+              <label for="s-batevery">Мышь прилетает раз в</label><output id="o-batevery">15 с</output>
+              <input type="range" id="s-batevery" min="5000" max="60000" step="1000" value="15000">
+            </div>
+            <div class="tune-row">
+              <label for="s-bossevery">Длина биома, стай</label><output id="o-bossevery">10</output>
+              <input type="range" id="s-bossevery" min="3" max="20" step="1" value="10">
+            </div>
+            <div class="tune-row circle-only" hidden>
+              <label for="s-circlered">Кружок: сколько горит красным</label><output id="o-circlered">700 мс</output>
+              <input type="range" id="s-circlered" min="200" max="2000" step="50" value="700">
+            </div>
+            <div class="tune-row circle-only" hidden>
+              <label for="s-circlecool">Кружок: откат после тычка</label><output id="o-circlecool">900 мс</output>
+              <input type="range" id="s-circlecool" min="0" max="3000" step="100" value="900">
+            </div>
+            <div class="tune-row circle-only" hidden>
+              <label for="s-circlespeed">Кружок: скорость</label><output id="o-circlespeed">440</output>
+              <input type="range" id="s-circlespeed" min="40" max="1200" step="20" value="440">
+            </div>
+            <div class="tune-row circle-only" hidden>
+              <label for="s-circlegreen">Кружок: зелёный до (случайно от 40%)</label><output id="o-circlegreen">3000 мс</output>
+              <input type="range" id="s-circlegreen" min="500" max="8000" step="250" value="3000">
+            </div>
+            <div class="tune-row">
               <label for="s-autoafter">Авто-режим через (0 — выключен)</label><output id="o-autoafter">15 с</output>
               <input type="range" id="s-autoafter" min="0" max="60000" step="5000" value="15000">
             </div>
@@ -176,6 +201,11 @@
               <label><input type="checkbox" id="c-adapt" checked> Адаптивная сложность</label>
               <label><input type="checkbox" id="c-fatigue" checked> Усталость от спама блока</label>
               <label><input type="checkbox" id="c-combo" checked> Серия и бонус к опыту</label>
+              <label><input type="checkbox" id="c-biomes" checked> Биомы</label>
+              <label><input type="checkbox" id="c-biomepin" checked> Отступление не уводит в прошлый биом</label>
+              <label><input type="checkbox" id="c-biomebg"> Фоны биомов (тяжёлые, могут тормозить)</label>
+              <label><input type="checkbox" id="c-biomemods"> Модификаторы биомов</label>
+              <label><input type="checkbox" id="c-bats" checked> Налёт летучих мышей</label>
             </div>
             <div class="tune-export">
               <button type="button" class="prompt-btn" id="tune-export">Скопировать мои настройки</button>
@@ -331,6 +361,7 @@
 <script src="js/core.js"></script>
 <script src="js/tune.js"></script>
 <script src="js/state.js"></script>
+<script src="js/biome.js"></script>
 <script src="js/pack.js"></script>
 <script src="js/tutorial.js"></script>
 <script src="js/progress.js"></script>
@@ -341,6 +372,7 @@
 <script src="js/render.js"></script>
 <script src="js/render-mob.js"></script>
 <script src="js/render-fx.js"></script>
+<script src="js/circle.js"></script>
 <script src="js/hud.js"></script>
 <script src="js/inventory.js"></script>
 <script src="js/settings.js"></script>

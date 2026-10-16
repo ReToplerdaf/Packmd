@@ -8,6 +8,7 @@ function pressGuard() {
   var now = performance.now();
   autoTouch();
   unlockAudio();
+  if (batBlocks('guard')) { batBlockedPress(); return; }   // кнопку держит летучая мышь
 
   // Усталость от спама: больше 3 нажатий подряд быстро — откат ×2, а если
   // спам продолжается, пока эта усталость ещё не истекла — держим ×4
@@ -54,7 +55,11 @@ function breakShield(mob, now) {
   // Даём полную паузу и запрещаем блок на ближайшем ходу.
   S.mobSwingAt = Math.max(S.mobSwingAt, now + dur(TUNE.mobRate));
   mob.noShieldNext = true;
-  if (mob.type === 'yellow' && mob.hp > 0) {
+  if (mob.chief && mob.hp > 0) {
+    // Главарь во 2-й фазе: после раскола щита — двойной удар (см. resolveCrit).
+    S.telegraph = { start: now, hitAt: now + dur(TUNE.yellowCounter), mob: mob, yellowFollow: true, first: true };
+    sfx('telegraph');
+  } else if (mob.type === 'yellow' && mob.hp > 0) {
     // Жёлтый моб: снятие щита сразу оборачивается его критом — но не
     // мгновенно, а коротким отдельным замахом (тот же принцип, что у
     // обычного крита): замах длится «Контрблок
@@ -63,6 +68,12 @@ function breakShield(mob, now) {
     S.telegraph = { start: now, hitAt: now + dur(TUNE.yellowCounter), mob: mob, yellowFollow: true };
     sfx('telegraph');
   }
+}
+
+// Нажатие на кнопку, которую держит летучая мышь налёта: ничего не происходит.
+function batBlockedPress() {
+  sfx('miss');
+  floatText('МЫШЬ', '#8a90a6', 0, 0, false);
 }
 
 // «Удар» — не свободный источник урона: он либо добивает контратакой после
@@ -80,6 +91,7 @@ function pressStrike() {
   // антидребезг — в реальном времени, не зависит от скорости боя
   S.strikeCoolAt = now + STRIKE_DEBOUNCE_MS;
   unlockAudio();
+  if (batBlocks('strike')) { batBlockedPress(); return; }  // кнопку держит летучая мышь
   var mob = front();
   if (!mob || S.phase !== 'fight') return;
 

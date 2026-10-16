@@ -10,9 +10,10 @@ var MAX_HEALERS = 2;           // больше двух хилеров в одн
 function rollMobType(noHealer) {
   // без хилера — бросаем только по «остальной» части шкалы, пропорции
   // жёлтых/дальников/обычных сохраняются
-  var r = noHealer ? TUNE.healerRate + rnd() * Math.max(0, 1 - TUNE.healerRate) : rnd();
-  if (r < TUNE.healerRate) return 'healer';
-  r -= TUNE.healerRate;
+  var hr = biomeHealerRate();
+  var r = noHealer ? hr + rnd() * Math.max(0, 1 - hr) : rnd();
+  if (r < hr) return 'healer';
+  r -= hr;
   if (r < TUNE.yellowRate) return 'yellow';
   r -= TUNE.yellowRate;
   if (r < TUNE.rangedRate) return 'ranged';
@@ -22,9 +23,10 @@ function rollMobType(noHealer) {
 function spawnPack(now) {
   if (S.tut && !S.tut.spawned) { spawnTutorialPack(now); return; }
   savePackStart();                 // сохранение на переходе к новой стае
+  enterBiome(now);
   var packMin = Math.max(2, TUNE.packMin || 2), packMax = Math.max(packMin, TUNE.packMax || 4);
   var n = ri(packMin, packMax);
-  var progBonus = TUNE.adapt ? Math.floor(S.progress / 4) : 0;
+  var progBonus = packLevelBonus();
   S.packLevel = Math.max(1, Math.min(S.level + 6, S.level + ri(-1, 1) + progBonus));
   // Память забывается медленно: одна и та же память действует MEM_PACKS
   // стай подряд и только потом уменьшается на 1 (и отсчёт идёт заново).
@@ -38,6 +40,8 @@ function spawnPack(now) {
   } else {
     S.packResist = 0;
   }
+
+  if (isChiefPack()) { spawnChiefPack(now); return; }
 
   // Если вожак только что сбежал, он гарантированно «появляется в
   // следующей стае» — без этого лидер мог укатиться в стаю, где n<3,
@@ -102,11 +106,43 @@ function spawnPack(now) {
       // 3 коронами, — но второй раз уже не сбегает: дерётся до конца.
       var lb = S.pack[S.pack.length - 1];
       lb.rage = BOSS_FLEE_RAGE; lb.noFlee = true;
+    } else if (biomeMod('leaderRage')) {
+      S.pack[S.pack.length - 1].rage = biomeMod('leaderRage');   // Метеорит: вожак сразу зол
     }
   }
 
   S.pack = S.pack.concat(backline);
+  if (CIRCLE_MODE) circlePack();
 
+  S.mobSwingAt = now + dur(TUNE.mobRate * 0.7);
+  S.telegraph = null;
+}
+
+// Стая главаря: свита из обычных мобов впереди, главарь последним.
+// Сбежавший вожак ждёт следующей обычной стаи (S.bossFled не трогаем).
+function spawnChiefPack(now) {
+  S.pack = [];
+  for (var i = 0; i < CHIEF_ESCORT; i++) {
+    var ms = mobStats(S.packLevel, false);
+    S.pack.push({
+      maxHp: ms.maxHp, hp: ms.maxHp, atk: ms.atk, xp: ms.xp,
+      leader: false, staggerUntil: 0, hurt: 0,
+      wob: rnd() * 6.28, size: rr(0.85, 1.05),
+      shield: false, pulse: null, rage: 0, vulnMult: 1, guarding: null, guardedBy: null, retreatDeadline: 0,
+      type: 'normal', healPulse: null, rangedTelegraph: null, rangedSwingAt: 0
+    });
+  }
+  var cs = mobStats(S.packLevel, true);
+  var chp = Math.round(cs.maxHp * CHIEF_HP);
+  S.pack.push({
+    maxHp: chp, hp: chp, atk: Math.round(cs.atk * CHIEF_ATK), xp: Math.round(cs.xp * CHIEF_XP),
+    leader: true, chief: true, chiefPhase: 1, noFlee: true, staggerUntil: 0, hurt: 0,
+    wob: rnd() * 6.28, size: CHIEF_SIZE,
+    shield: false, pulse: null, rage: biomeMod('leaderRage') || 0, vulnMult: 1, guarding: null, guardedBy: null, retreatDeadline: 0,
+    type: 'normal', healPulse: null, rangedTelegraph: null, rangedSwingAt: 0
+  });
+  BIOME.banner = { name: 'Главарь', note: curBiome().name, start: now };
+  sfx('enrage');
   S.mobSwingAt = now + dur(TUNE.mobRate * 0.7);
   S.telegraph = null;
 }

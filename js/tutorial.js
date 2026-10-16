@@ -42,7 +42,7 @@ var TUT_TIPS = {
 
 // Пройдено, если стоит флаг или уже есть сохранение (оно появляется только
 // после обучения — «стая 0» пройдена).
-function tutDone() { try { return !!(localStorage.getItem(TUT_KEY) || localStorage.getItem('arena.save')); } catch (e) { return true; } }
+function tutDone() { if (CIRCLE_MODE) return true; try { return !!(localStorage.getItem(TUT_KEY) || localStorage.getItem('arena.save')); } catch (e) { return true; } }
 function tutMarkDone() { try { localStorage.setItem(TUT_KEY, '1'); } catch (e) {} }
 
 function tutMob(type, leader, ms) {
