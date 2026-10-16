@@ -27,11 +27,11 @@ const state = page => page.evaluate(() => ({
 }));
 
 {
-  const g = await openGame(browser, file, { seed: 5 });
+  const g = await openGame(browser, file, { seed: 5, tune: { biomeMods: true } });
   await run(g.page, 300, { bot: { skill: 1 } });
   let s = await state(g.page);
   await g.page.screenshot({ path: path.join(OUT, 'biome-0.png') });
-  check('начало — Русло реки, без модификаторов', s.biome === 0 && s.name === 'Русло реки' && s.healer === 0.2 && s.lead === 500, s);
+  check('начало — Высохшее русло, без модификаторов', s.biome === 0 && s.name === 'Высохшее русло' && s.healer === 0.2 && s.lead === 500, s);
 
   await toPack(g.page, 10);
   s = await state(g.page);
@@ -52,7 +52,7 @@ const state = page => page.evaluate(() => ({
 
   await toPack(g.page, 40);
   s = await state(g.page);
-  check('после 4-го биома — круг 2 и +2 к уровню стаи', s.biome === 4 && s.name === 'Русло реки' && s.banner === 'Русло реки · круг 2' && s.bonus === 10 + 2, s);
+  check('после 4-го биома — круг 2 и +2 к уровню стаи', s.biome === 4 && s.name === 'Высохшее русло' && s.banner === 'Высохшее русло · круг 2' && s.bonus === 10 + 2, s);
 
   // Отступление не уводит в прошлый биом (по умолчанию), а с выключенным закреплением — уводит.
   const retreat = (p, pin) => g.page.evaluate(([p, pin]) => { TUNE.biomePin = pin; S.progress = p; resolvePrompt('retreat'); var r = S.progress; TUNE.biomePin = true; return r; }, [p, pin]);
@@ -67,7 +67,7 @@ const state = page => page.evaluate(() => ({
 
 // Главарь: последняя стая биома, три фазы, двойной удар, гарантированная редкая вещь.
 {
-  const g = await openGame(browser, file, { seed: 7 });
+  const g = await openGame(browser, file, { seed: 7, tune: { biomeMods: true } });
   await run(g.page, 200, { bot: { skill: 1 } });
   await toPack(g.page, 9);
   const pk = await g.page.evaluate(() => S.pack.map(m => ({ type: m.type, chief: !!m.chief, leader: m.leader })));
@@ -91,6 +91,20 @@ const state = page => page.evaluate(() => ({
     var it = S.log[0] && S.log[0].item; return { info: S.info.slice(0, 3).map(e => e.kind), rarity: it && RARITY.indexOf(it.rarity), progress: S.progress }; });
   check('главарь повержен: запись в «Инфо», вещь «Редкий» или выше, биом пройден', end.info.includes('chief') && end.rarity >= 2 && end.progress === 10, end);
   check('нет ошибок в консоли (главарь)', g.errors.length === 0, g.errors);
+  await g.close();
+}
+
+// По умолчанию модификаторы биомов выключены: Пещера и Пустыня — как Высохшее русло, только цвет фона другой.
+{
+  const g = await openGame(browser, file, { seed: 5 });
+  await run(g.page, 200, { bot: { skill: 1 } });
+  await toPack(g.page, 10);
+  const a = await state(g.page);
+  await toPack(g.page, 20);
+  const b = await state(g.page);
+  const bg = await g.page.evaluate(() => curBiome().flat[0]);
+  check('модификаторы выключены по умолчанию: биом меняется, бой нет', a.biome === 1 && a.lead === 500 && b.biome === 2 && Math.abs(b.healer - 0.2) < 1e-9 && bg === '#8a3b22', { a, b, bg });
+  check('нет ошибок в консоли (без модификаторов)', g.errors.length === 0, g.errors);
   await g.close();
 }
 

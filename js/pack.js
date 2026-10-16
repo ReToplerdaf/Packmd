@@ -106,8 +106,8 @@ function spawnPack(now) {
       // 3 коронами, — но второй раз уже не сбегает: дерётся до конца.
       var lb = S.pack[S.pack.length - 1];
       lb.rage = BOSS_FLEE_RAGE; lb.noFlee = true;
-    } else if (TUNE.biomes && curBiome().leaderRage) {
-      S.pack[S.pack.length - 1].rage = curBiome().leaderRage;   // Метеорит: вожак сразу зол
+    } else if (biomeMod('leaderRage')) {
+      S.pack[S.pack.length - 1].rage = biomeMod('leaderRage');   // Метеорит: вожак сразу зол
     }
   }
 
@@ -138,7 +138,7 @@ function spawnChiefPack(now) {
     maxHp: chp, hp: chp, atk: Math.round(cs.atk * CHIEF_ATK), xp: Math.round(cs.xp * CHIEF_XP),
     leader: true, chief: true, chiefPhase: 1, noFlee: true, staggerUntil: 0, hurt: 0,
     wob: rnd() * 6.28, size: CHIEF_SIZE,
-    shield: false, pulse: null, rage: curBiome().leaderRage || 0, vulnMult: 1, guarding: null, guardedBy: null, retreatDeadline: 0,
+    shield: false, pulse: null, rage: biomeMod('leaderRage') || 0, vulnMult: 1, guarding: null, guardedBy: null, retreatDeadline: 0,
     type: 'normal', healPulse: null, rangedTelegraph: null, rangedSwingAt: 0
   });
   BIOME.banner = { name: 'Главарь', note: curBiome().name, start: now };

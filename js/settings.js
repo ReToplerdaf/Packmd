@@ -73,6 +73,7 @@ bindToggle('c-biomes', 'biomes');
 bindToggle('c-biomepin', 'biomePin');
 bindToggle('c-bats', 'bats');
 bindToggle('c-biomebg', 'biomeBg');
+bindToggle('c-biomemods', 'biomeMods');
 
 // Сброс всех ползунков и тумблеров к умолчаниям версии.
 $('tune-reset').addEventListener('click', function () {

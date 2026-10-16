@@ -9,10 +9,11 @@
 // Модификаторы: healer — прибавка к шансу хилера, lead — множитель замаха
 // крита, leaderRage — сколько стаков злости у вожака с самого спавна.
 var BIOMES = [
-  { id: 'river',  name: 'Русло реки',      bg: ['#86bfe0', '#d6ecf3'], icon: '#4fa3c7' },
-  { id: 'cave',   name: 'Пещера',          bg: ['#05060a', '#0c0e15'], icon: '#5aa6e8', lead: 0.9, note: 'замах крита короче' },
-  { id: 'city',   name: 'Пустынный город', bg: ['#7fb6de', '#f2dcaa'], icon: '#d8a84e', healer: 0.10, note: 'хилеров больше' },
-  { id: 'meteor', name: 'Метеорит',        bg: ['#080818', '#1c0e1a'], icon: '#e8643c', leaderRage: 1, note: 'вожак сразу зол' }
+// flat — простой фон цветом (сверху, снизу), когда фоны биомов выключены (по умолчанию).
+  { id: 'river',  name: 'Высохшее русло',  bg: ['#86bfe0', '#d6ecf3'], flat: ['#4f6260', '#6e5c44'], icon: '#4fa3c7' },
+  { id: 'cave',   name: 'Пещера',          bg: ['#05060a', '#0c0e15'], flat: ['#0a0b0e', '#050506'], icon: '#5aa6e8', lead: 0.9, note: 'замах крита короче' },
+  { id: 'city',   name: 'Пустынный город', bg: ['#7fb6de', '#f2dcaa'], flat: ['#8a3b22', '#c98a3a'], icon: '#d8a84e', healer: 0.10, note: 'хилеров больше' },
+  { id: 'meteor', name: 'Метеорит',        bg: ['#080818', '#1c0e1a'], flat: ['#5e5b57', '#9a8b6e'], icon: '#e8643c', leaderRage: 1, note: 'вожак сразу зол' }
 ];
 // Фон, когда биомы выключены, и в обучении — как было до биомов.
 var BIOME_PLAIN = { id: 'plain', bg: ['#161a26', '#0b0e15'] };
@@ -43,8 +44,11 @@ function retreatFloor() {
   return b > 0 && TUNE.biomePin ? b * biomeLen() : -4;
 }
 
-function biomeHealerRate() { return TUNE.healerRate + (TUNE.biomes ? curBiome().healer || 0 : 0); }
-function biomeLead() { return TUNE.lead * (TUNE.biomes ? curBiome().lead || 1 : 1); }
+// Модификаторы боя у биомов — по тумблеру «Модификаторы биомов» (biomeMods, по
+// умолчанию выключен: автор решил, что биом пока отличается только цветом).
+function biomeMod(key) { return TUNE.biomes && TUNE.biomeMods ? curBiome()[key] : undefined; }
+function biomeHealerRate() { return TUNE.healerRate + (biomeMod('healer') || 0); }
+function biomeLead() { return TUNE.lead * (biomeMod('lead') || 1); }
 
 // Вызывается на спавне обычной стаи: запоминает биом и объявляет смену.
 function enterBiome(now) {
@@ -54,7 +58,7 @@ function enterBiome(now) {
   if (!TUNE.biomes) return;
   if (prevIdx == null ? idx > 0 : prevIdx !== idx) {
     var b = BIOMES[idx % BIOMES.length], loop = Math.floor(idx / BIOMES.length);
-    BIOME.banner = { name: b.name + (loop ? ' · круг ' + (loop + 1) : ''), note: b.note || '', start: now };
+    BIOME.banner = { name: b.name + (loop ? ' · круг ' + (loop + 1) : ''), note: TUNE.biomeMods ? b.note || '' : '', start: now };
     if (prevIdx != null) {
       pushInfo({ kind: 'biome', biome: idx });
       markSave();

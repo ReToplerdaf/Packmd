@@ -189,11 +189,13 @@ function render(t) {
 
   // фон
   // фоны биомов тяжёлые для телефона — по умолчанию выключены (тумблер «Фоны биомов»)
-  var bio = TUNE.biomes && TUNE.biomeBg && !S.tut ? curBiome() : BIOME_PLAIN;
+  // без картинок биом различается только цветом фона (flat)
+  var bio = TUNE.biomes && !S.tut ? curBiome() : BIOME_PLAIN;
+  var bgc = bio !== BIOME_PLAIN && !TUNE.biomeBg ? bio.flat : bio.bg;
   var grd = ctx.createLinearGradient(0, 0, 0, H);
-  grd.addColorStop(0, bio.bg[0]); grd.addColorStop(1, bio.bg[1]);
+  grd.addColorStop(0, bgc[0]); grd.addColorStop(1, bgc[1]);
   ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
-  if (bio !== BIOME_PLAIN) drawBiomeBack(bio, gy, t);
+  if (bio !== BIOME_PLAIN && TUNE.biomeBg) drawBiomeBack(bio, gy, t);
 
   ctx.save();
   var sh = S.shake > 0 ? S.shake : 0;

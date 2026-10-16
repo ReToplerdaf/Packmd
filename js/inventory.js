@@ -95,7 +95,7 @@ function renderInfo() {
       var bm = BIOMES[e.biome % BIOMES.length], bl = Math.floor(e.biome / BIOMES.length);
       html += '<div class="drop" style="--rc:' + bm.icon + '"><div class="rail"></div>' +
               '<div><div class="nm">Новый биом: ' + bm.name + (bl ? ' · круг ' + (bl + 1) : '') + '</div>' +
-              '<div class="slot">' + (bm.note || 'без особенностей') + (TUNE.biomePin ? ' · отступление сюда не уводит' : '') + '</div></div>' +
+              '<div class="slot">' + (TUNE.biomeMods && bm.note || 'без особенностей') + (TUNE.biomePin ? ' · отступление сюда не уводит' : '') + '</div></div>' +
               '<div class="verdict off">биом</div></div>';
       continue;
     }
