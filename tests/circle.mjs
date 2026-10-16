@@ -60,6 +60,14 @@ async function until(page, fn, max = 2000) {
   await run(g.page, 4, {});
   await g.page.screenshot({ path: path.join(OUT, 'circle-cool.png') });
 
+  // краснеет только на остановке и, пока красный, стоит на месте
+  {
+    const r0 = await until(g.page, s => s.red);
+    const moving = await g.page.evaluate(() => !!CIRCLE.hop || performance.now() >= CIRCLE.stopUntil);
+    await run(g.page, 8, {});
+    const r1 = await st(g.page);
+    check('красный — только на остановке и не двигается', !moving && r1.red && r1.x === r0.x && r1.y === r0.y, { moving, a: [r0.x, r0.y], b: [r1.x, r1.y] });
+  }
   // не успели по красному — урон герою, моб жив
   let before = await until(g.page, s => s.red && !s.cool);
   const k0 = before.kills;

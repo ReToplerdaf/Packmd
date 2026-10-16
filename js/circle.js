@@ -141,8 +141,8 @@ function circleTick(mob, now) {
   var dt = Math.max(0, Math.min(100, now - CIRCLE.last));
   CIRCLE.last = now;
 
-  // перебежки с остановками
-  if (now >= CIRCLE.stopUntil) {
+  // перебежки с остановками; красный стоит на месте, пока не кончится его время
+  if (now >= CIRCLE.stopUntil && !CIRCLE.red) {
     // бежит вдоль дуги: шаг в пикселях переводится в долю пути от точки до цели
     // прыжок — по прямой с подъёмом над рюкзаком в цель (tu, tv) другой дуги
     var hop = CIRCLE.hop;
@@ -177,10 +177,11 @@ function circleTick(mob, now) {
 
 // Покраснение и пропущенный красный.
 function circleTickRed(mob, now) {
-  // покраснел
-  if (!CIRCLE.red && now >= CIRCLE.redAt) {
+  // покраснел — только на остановке (не в перебежке и не в прыжке)
+  if (!CIRCLE.red && now >= CIRCLE.redAt && !CIRCLE.hop && now < CIRCLE.stopUntil) {
     CIRCLE.red = { start: now };
     CIRCLE.redUntil = now + dur(TUNE.circleRed);
+    CIRCLE.stopUntil = Math.max(CIRCLE.stopUntil, CIRCLE.redUntil);   // стоит, пока красный
     sfx('telegraph');
     if (autoBlocks()) { circleKill(now, false); return; }   // авто: с шансом бьёт сам
   }

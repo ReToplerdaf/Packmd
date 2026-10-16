@@ -36,7 +36,7 @@ const tapBat = (page, dx = 0, dy = 0) => page.evaluate(([dx, dy]) => {
 
 {
   // мобы не бьют: проверяем только мышь
-  const g = await openGame(browser, file, { seed: 5, tune: { mobRate: 1e8, rangedInterval: 1e8 } });
+  const g = await openGame(browser, file, { seed: 5, tune: { mobRate: 1e8, rangedInterval: 1e8, autoAfter: 0 } });
   let s = await until(g.page, s => s.phase === 'fight');
   await g.page.evaluate(() => { RAID.at = performance.now(); S.hp = S.stats.maxHp = 1e6; });
   s = await until(g.page, s => s.bat && !s.hop);
