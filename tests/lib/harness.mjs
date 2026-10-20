@@ -48,7 +48,7 @@ export async function launch() {
   return chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
 }
 
-// Открывает игру. cfg: { seed, tutorial, tune, ui }. Возвращает { page, errors }.
+// Открывает игру. cfg: { seed, tutorial, tune, ui, query } (query — например '?circle'). Возвращает { page, errors }.
 export async function openGame(browser, htmlPath, cfg = {}) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
@@ -56,7 +56,7 @@ export async function openGame(browser, htmlPath, cfg = {}) {
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
   await page.addInitScript(`window.__DRV_CFG = ${JSON.stringify(cfg)};\n${DRIVER}`);
-  await page.goto(pathToFileURL(htmlPath).href);
+  await page.goto(pathToFileURL(htmlPath).href + (cfg.query || ''));
   await page.evaluate(HOOK_IF_MISSING);
   return { page, errors, close: () => ctx.close() };
 }

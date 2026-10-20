@@ -7,9 +7,11 @@
 // выходит вперёд (а дальник и хилер — когда впервые начинают действовать),
 // бой встаёт на паузу и показывается карточка с объяснением.
 // Дальник и хилер «спят», пока до них не дошла очередь в сценарии, чтобы
-// объяснения шли по одному, а не все сразу.
+// объяснения шли по одному, а не все сразу. Летучая мышь налёта прилетает,
+// когда вперёд выходит третий обычный (если налёт мышей включён).
 var TUT_KEY = 'arena.tutorial.done';
-var TUT_ORDER = ['normal', 'yellow', 'ranged', 'healer', 'leader'];
+var TUT_ORDER = ['normal', 'yellow', 'ranged', 'bat', 'healer', 'leader'];
+function tutTotal() { return TUT_ORDER.length - (TUNE.bats ? 0 : 1); }
 var TUT_TIPS = {
   normal: { h: 'Обычный моб',
     p: 'Бой идёт сам: герой бьёт переднего моба. Вы вмешиваетесь двумя кнопками.<ul>' +
@@ -22,15 +24,17 @@ var TUT_TIPS = {
        '<li>Сразу после раскола моб быстро бьёт критом — успейте нажать <b>Защиту</b>.</li>' +
        '<li>Атака мимо такта злит моба и вожака.</li></ul>' },
   ranged: { h: 'Дальник',
-    p: 'Стреляет из глубины стаи по своему таймеру.<ul>' +
-       '<li>Поднимает посох, ядро в сфере краснеет — шар летит к кнопке щита.</li>' +
-       '<li>Жмите <b>Защиту</b>, когда шар долетает: он отлетит обратно в мобов.</li>' +
+    p: 'Стреляет из глубины стаи красным шаром по таймеру.<ul>' +
+       '<li>Жмите <b>Защиту</b>, когда шар долетает до щита: он отлетит обратно в случайного моба.</li>' +
        '<li>Пропущенный выстрел злит дальника: следующий шар намного сильнее.</li></ul>' },
+  bat: { h: 'Налёт',
+    p: 'Налетает посреди боя и садится у одной из кнопок.<ul>' +
+       '<li>Перелетает от кнопки к кнопке. Когда мышь остановилась и стала <b>красной</b> — коснитесь её пальцем, и налёт сбит. Не успели — ждите, пока покраснеет снова.</li>' +
+       '<li>Урона не наносит. Пока мышь сидит у кнопки, эта кнопка <b>не работает</b> и темнеет.</li></ul>' },
   healer: { h: 'Хилер',
-    p: 'Лечит переднего моба, когда тот ранен.<ul>' +
+    p: 'Лечит переднего моба: чем сильнее тот ранен, тем больше лечит.<ul>' +
        '<li>Пока хилер поднял посох и дрожит — жмите <b>Атаку</b>: лечение прервано и достаётся герою.</li>' +
-       '<li>Нажали не вовремя — лечение срабатывает сразу.</li>' +
-       '<li>У хилера и дальника 1 HP: любой удар их добивает.</li></ul>' },
+       '<li>Умирает с одного удара.</li></ul>' },
   leader: { h: 'Вожак',
     p: 'Крупный красный моб, есть в каждой стае из 3 и больше.<ul>' +
        '<li>Каждый промах по щиту жёлтого даёт ему корону злости: +50% урона.</li>' +
@@ -42,7 +46,7 @@ var TUT_TIPS = {
 
 // Пройдено, если стоит флаг или уже есть сохранение (оно появляется только
 // после обучения — «стая 0» пройдена).
-function tutDone() { try { return !!(localStorage.getItem(TUT_KEY) || localStorage.getItem('arena.save')); } catch (e) { return true; } }
+function tutDone() { if (CIRCLE_MODE) return true; try { return !!(localStorage.getItem(TUT_KEY) || localStorage.getItem('arena.save')); } catch (e) { return true; } }
 function tutMarkDone() { try { localStorage.setItem(TUT_KEY, '1'); } catch (e) {} }
 
 function tutMob(type, leader, ms) {
@@ -59,8 +63,8 @@ function tutMob(type, leader, ms) {
   return m;
 }
 
-// Стая обучения: обычный → жёлтый → обычный (будит дальника) → вожак
-// (будит хилера), за ними дальник и хилер.
+// Стая обучения: обычный → жёлтый → обычный (будит дальника) → обычный
+// (зовёт мышь) → вожак (будит хилера), за ними дальник и хилер.
 function spawnTutorialPack(now) {
   S.tut.spawned = true;
   S.packLevel = S.level;
@@ -70,8 +74,14 @@ function spawnTutorialPack(now) {
   var ld = tutMob('normal', true, mobStats(S.packLevel, true));
   n2.tutKey = null; n2.tutWake = 'ranged';
   ld.tutWake = 'healer';
-  S.pack = [tutMob('normal', false, reg()), tutMob('yellow', false, reg()), n2, ld,
-            tutMob('ranged', false, reg()), tutMob('healer', false, reg())];
+  var mid = [n2];
+  if (TUNE.bats) {
+    var n3 = tutMob('normal', false, reg());
+    n3.tutKey = null; n3.tutWake = 'bat';
+    mid.push(n3);
+  }
+  S.pack = [tutMob('normal', false, reg()), tutMob('yellow', false, reg())].concat(mid, [ld,
+            tutMob('ranged', false, reg()), tutMob('healer', false, reg())]);
   S.mobSwingAt = now + dur(TUNE.mobRate * 0.7);
   S.telegraph = null;
 }
@@ -89,7 +99,8 @@ function tutShow(key) {
   S.tut.shown[key] = true;
   var tip = TUT_TIPS[key];
   if (key !== 'done') S.tut.step++;
-  el.tutStep.textContent = key === 'done' ? 'ОБУЧЕНИЕ' : 'ОБУЧЕНИЕ · ' + S.tut.step + ' / ' + TUT_ORDER.length;
+  el.tutStep.textContent = key === 'done' ? 'ОБУЧЕНИЕ' : 'ОБУЧЕНИЕ · ' + S.tut.step + ' / ' + tutTotal();
+  el.tutOverlay.classList.toggle('tut-top', key === 'bat');
   el.tutH.textContent = tip.h;
   el.tutText.innerHTML = tip.p;
   el.tutSkip.hidden = key === 'done';
@@ -131,7 +142,16 @@ function tutSkip() {
 function tutTick(now) {
   if (!S.tut || !S.tut.spawned) return;
   if (!S.pack.length) { tutFinish(); return; }
+  // Мышь обучения: карточка — когда она села у кнопки; сбили — больше не прилетает.
+  if (S.tut.bat) {
+    if (CIRCLE.mob && !CIRCLE.hop) { tutShow('bat'); if (S.tutPaused) return; }
+    else if (!CIRCLE.mob && S.tut.shown.bat) S.tut.bat = false;
+  }
   var fr = S.pack[0];
+  if (fr.tutWake === 'bat') {
+    S.tut.bat = true; RAID.at = now + dur(600);
+    fr.tutWake = null;
+  }
   if (fr.tutWake) {
     for (var i = 0; i < S.pack.length; i++) {
       var m = S.pack[i];

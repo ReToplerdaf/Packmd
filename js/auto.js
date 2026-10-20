@@ -73,7 +73,7 @@ function grantOffline(ms) {
   if (kills <= 0) return res;
   var drops = [];
   var packMin = Math.max(2, TUNE.packMin || 2), packMax = Math.max(packMin, TUNE.packMax || 4);
-  var progBonus = TUNE.adapt ? Math.floor(S.progress / 4) : 0;
+  var progBonus = packLevelBonus();
   while (res.kills < kills) {
     var n = ri(packMin, packMax);
     var lvl = Math.max(1, Math.min(S.level + 6, S.level + ri(-1, 1) + progBonus));

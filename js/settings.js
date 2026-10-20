@@ -49,6 +49,13 @@ bindSlider('s-rangedlead','o-rangedlead','rangedLead', function (v) { return v +
 bindSlider('s-fatigue','o-fatigue','fatigueWindow', function (v) { return v + ' мс'; });
 bindSlider('s-packmin','o-packmin','packMin', function (v) { return v; });
 bindSlider('s-packmax','o-packmax','packMax', function (v) { return v; });
+bindSlider('s-bossevery','o-bossevery','bossEvery', function (v) { return v; });
+bindSlider('s-batevery','o-batevery','batEvery', function (v) { return Math.round(v / 1000) + ' с'; });
+bindSlider('s-circlered','o-circlered','circleRed', function (v) { return v + ' мс'; });
+bindSlider('s-circlecool','o-circlecool','circleCool', function (v) { return v + ' мс'; });
+bindSlider('s-circlespeed','o-circlespeed','circleSpeed', function (v) { return v; });
+bindSlider('s-circlegreen','o-circlegreen','circleGreen', function (v) { return v + ' мс'; });
+if (CIRCLE_MODE) Array.prototype.forEach.call(document.querySelectorAll('.circle-only'), function (r) { r.hidden = false; });
 bindSlider('s-autoafter','o-autoafter','autoAfter', function (v) { return v ? (v / 1000) + ' с' : 'выкл'; });
 bindSlider('s-autoblock','o-autoblock','autoBlock', function (v) { return v + ' %'; }, 100);
 
@@ -62,6 +69,11 @@ bindToggle('c-debug', 'debug');
 bindToggle('c-adapt', 'adapt');
 bindToggle('c-fatigue', 'fatigue');
 bindToggle('c-combo', 'combo');
+bindToggle('c-biomes', 'biomes');
+bindToggle('c-biomepin', 'biomePin');
+bindToggle('c-bats', 'bats');
+bindToggle('c-biomebg', 'biomeBg');
+bindToggle('c-biomemods', 'biomeMods');
 
 // Сброс всех ползунков и тумблеров к умолчаниям версии.
 $('tune-reset').addEventListener('click', function () {

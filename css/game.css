@@ -99,6 +99,8 @@ body {
 .cp-stack i.on { background: rgba(235,60,45,.55); }            /* нижние — всегда красные */
 .cp-stack.t2 i.on.top { background: rgba(240,190,40,.50); }      /* откат — только верхний */
 .cp-stack.t1 i.on.top { background: rgba(70,190,95,.50); }
+/* Иконка биома — цветная точка в углу плашки «стая». */
+.hud-level.hud-cp > .cp-biome { position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; border-radius: 50%; background: var(--biome, #6b7aa8); box-shadow: 0 0 6px var(--biome, #6b7aa8); }
 .hud-level .kills.auto-tag { color: var(--accent); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .prompt-h.offline-h { color: var(--accent); }
 /* Серия точных нажатий — под плашкой «стая». Ступени: t1 зелёная, t2 голубая, t3 золотая. */
@@ -237,6 +239,8 @@ body {
 #btn-guard.armed  { filter: brightness(1.28) saturate(1.15); }
 #btn-guard.cool   { filter: brightness(.62) saturate(.7); }
 #btn-strike.window { filter: brightness(1.3) saturate(1.2); }
+/* кнопку держит летучая мышь налёта — не работает */
+.wedge.bat-blocked, #btn-guard.bat-blocked, #btn-strike.bat-blocked { filter: grayscale(.85) brightness(.5); }
 
 /* маленькие полоски-метры больше не показываем — их заменила подсветка кнопок */
 .wedge .meter {
@@ -480,6 +484,8 @@ button.drop-verdict, .drop button.verdict {
 .tut-card .prompt-p li { margin: 3px 0; }
 .tut-card .prompt-p b { color: var(--ink); }
 .tut-start { width: 100%; margin-bottom: 4px; }
+/* карточка про мышь — сверху: мышь сидит у кнопок внизу, её не закрываем */
+.tut-overlay.tut-top { align-items: flex-start; padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
 
 /* экипировка */
 .gear-row {
