@@ -484,6 +484,8 @@ button.drop-verdict, .drop button.verdict {
 .tut-card .prompt-p li { margin: 3px 0; }
 .tut-card .prompt-p b { color: var(--ink); }
 .tut-start { width: 100%; margin-bottom: 4px; }
+/* карточка про мышь — сверху: мышь сидит у кнопок внизу, её не закрываем */
+.tut-overlay.tut-top { align-items: flex-start; padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
 
 /* экипировка */
 .gear-row {
