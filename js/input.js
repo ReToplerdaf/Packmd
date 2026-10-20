@@ -52,7 +52,7 @@ function breakShield(mob, now) {
   // истечь — тогда моб ходил в тот же кадр и с шансом сразу снова
   // вставал в блок: выглядело так, будто удар не прошёл / прошёл дважды.
   // Даём полную паузу и запрещаем блок на ближайшем ходу.
-  S.mobSwingAt = Math.max(S.mobSwingAt, now + dur(TUNE.mobRate));
+  S.mobSwingAt = Math.max(S.mobSwingAt, now + dur(pace(TUNE.mobRate)));
   mob.noShieldNext = true;
   if (mob.type === 'yellow' && mob.hp > 0) {
     // Жёлтый моб: снятие щита сразу оборачивается его критом — но не
@@ -60,7 +60,7 @@ function breakShield(mob, now) {
     // обычного крита): замах длится «Контрблок
     // жёлтого» миллисекунд, и решает всё та же точная синхронизация
     // с блоком в момент hitAt — reuse resolveCrit ничего не меняя.
-    S.telegraph = { start: now, hitAt: now + dur(TUNE.yellowCounter), mob: mob, yellowFollow: true };
+    S.telegraph = { start: now, hitAt: now + dur(pace(TUNE.yellowCounter)), mob: mob, yellowFollow: true };
     sfx('telegraph');
   }
 }

@@ -6,6 +6,9 @@
 // Три новых типа рядовых мобов — только идея, но чтобы её можно было
 // пощупать, они уже роллятся здесь. Вожак всегда обычный: он должен
 // оставаться главной целью, а не превращаться в ещё один спецтип.
+// Темп текущей стаи (ступень) и прошлой — для записи в «Инфо»; вне S,
+// чтобы снимки состояния боя совпадали с версией до темпа.
+var PACE = { cur: 0, prev: -1 };
 var MAX_HEALERS = 2;           // больше двух хилеров в одной стае не бывает
 function rollMobType(noHealer) {
   // без хилера — бросаем только по «остальной» части шкалы, пропорции
@@ -26,6 +29,10 @@ function spawnPack(now) {
   var n = ri(packMin, packMax);
   var progBonus = TUNE.adapt ? Math.floor(S.progress / 4) : 0;
   S.packLevel = Math.max(1, Math.min(S.level + 6, S.level + ri(-1, 1) + progBonus));
+  // Темп считается от чекпоинта, поэтому отступление снижает его само.
+  PACE.cur = TUNE.pace ? Math.min(PACE_CAP, Math.floor(Math.max(0, S.progress) / Math.max(1, TUNE.pacePacks))) : 0;
+  if (PACE.prev >= 0 && PACE.cur !== PACE.prev) pushInfo({ kind: 'pace', pace: PACE.cur, up: PACE.cur > PACE.prev });
+  PACE.prev = PACE.cur;
   // Память забывается медленно: одна и та же память действует MEM_PACKS
   // стай подряд и только потом уменьшается на 1 (и отсчёт идёт заново).
   if (TUNE.adapt) {
@@ -65,7 +72,7 @@ function spawnPack(now) {
       // хоть контры, хоть отражённого блоком выстрела.
       m.maxHp = 1; m.hp = 1;
     }
-    if (type === 'ranged') m.rangedSwingAt = now + dur(TUNE.rangedInterval * rr(0.6, 1.3));
+    if (type === 'ranged') m.rangedSwingAt = now + dur(pace(TUNE.rangedInterval) * rr(0.6, 1.3));
     if (type === 'healer') m.healSwingAt = now;   // готов сразу: первый каст — как только переднего ранят
     if (type === 'yellow') {
       // Жёлтый моб держит щит с самого начала, а не по случайному роллу —
@@ -107,9 +114,14 @@ function spawnPack(now) {
 
   S.pack = S.pack.concat(backline);
 
-  S.mobSwingAt = now + dur(TUNE.mobRate * 0.7);
+  S.mobSwingAt = now + dur(pace(TUNE.mobRate) * 0.7);
   S.telegraph = null;
 }
+
+// Множитель таймингов мобов от темпа стаи. В авто-режиме темп не действует:
+// там блокирует бросок autoBlock, и быстрые мобы просто чаще убивали бы.
+function paceK() { return PACE.cur && !AUTO.on ? Math.pow(1 - TUNE.paceStep, PACE.cur) : 1; }
+function pace(ms) { return ms * paceK(); }
 
 function front() { return S.pack.length ? S.pack[0] : null; }
 // Хилер, у которого сейчас идёт канал (ближайший к срабатыванию).

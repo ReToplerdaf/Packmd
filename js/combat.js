@@ -481,9 +481,9 @@ function step(now) {
       var rm = S.pack[ridx];
       if (rm.type !== 'ranged' || rm.hp <= 0 || rm.dormant) continue;
       if (!rm.rangedTelegraph && now >= rm.rangedSwingAt) {
-        rm.rangedTelegraph = { start: now, hitAt: now + dur(TUNE.rangedLead) };
+        rm.rangedTelegraph = { start: now, hitAt: now + dur(pace(TUNE.rangedLead)) };
         rm.castFlashAt = performance.now();   // вспышка сферы в момент выстрела
-        rm.rangedSwingAt = now + dur(TUNE.rangedInterval * rr(0.8, 1.2));
+        rm.rangedSwingAt = now + dur(pace(TUNE.rangedInterval) * rr(0.8, 1.2));
         sfx('telegraph');
         if (rm.tutKey) tutShow(rm.tutKey);
       }
@@ -514,7 +514,7 @@ function step(now) {
       // кого лечить (а не ждёт следующего полного интервала).
       if (!hm.healPulse && now >= (hm.healSwingAt || 0)) {
         if (fr && fr.hp > 0 && fr.hp < fr.maxHp * 0.92) {
-          hm.healSwingAt = now + dur(TUNE.healInterval * rr(0.85, 1.15));
+          hm.healSwingAt = now + dur(pace(TUNE.healInterval) * rr(0.85, 1.15));
           hm.healPulse = { start: now, hitAt: now + dur(PULSE_LEAD), target: fr };
           sfx('shield');
           floatText('ЛЕЧИТ', '#7cd88a', 0, 0, false);
@@ -571,7 +571,7 @@ function step(now) {
   }
 
   if (now >= S.mobSwingAt) {
-    S.mobSwingAt = now + dur(TUNE.mobRate * rr(0.85, 1.15));
+    S.mobSwingAt = now + dur(pace(TUNE.mobRate) * rr(0.85, 1.15));
     if (mob.shield || (mob.type === 'healer' && mob.healPulse)) {
       // Пока щит не разбит (или канал лечения не прерван) — моб держит его
       // и не замахивается ни на крит, ни на обычный удар. Иначе получался
@@ -598,7 +598,7 @@ function step(now) {
       sfx('shield');
       floatText('ЩИТ', '#4a9fe8', 0, 0, false);
     } else if (rnd() < TUNE.critRate) {
-      S.telegraph = { start: now, hitAt: now + dur(TUNE.lead), mob: mob };
+      S.telegraph = { start: now, hitAt: now + dur(pace(TUNE.lead)), mob: mob };
       sfx('telegraph');
     } else {
       mobNormalHit(now, mob);
