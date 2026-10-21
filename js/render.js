@@ -157,9 +157,9 @@ function drawSword(hx, hy, ang, len, w, s, glow, bladeColor) {
 
 // Сфера посоха в локальных координатах моба: x = ORB_DX·s,
 // y = ORB_DY_H·hgt + ORB_DY_S·s (центр сферы).
-var ORB_DX = 10, ORB_DY_H = -1.08, ORB_DY_S = -7.2;    // сфера ×2 к исходной
+var ORB_DX = -10, ORB_DY_H = -1.08, ORB_DY_S = -7.2;    // сфера ×2 к исходной
 var RANGED_WINDUP = 700;   // сколько мс дальнобойщик поднимает посох перед выстрелом
-var RANGED_LIFT_DX = 2, RANGED_LIFT_DY = 10;   // насколько смещается поднятый посох (в s)
+var RANGED_LIFT_DX = -2, RANGED_LIFT_DY = 10;   // насколько смещается поднятый посох (в s)
 function mobBaseScale(m) { return Math.min(1.6, Math.max(0.88, H / 178)) * m.size; }
 function mobScreen(m, i) {
   return {
