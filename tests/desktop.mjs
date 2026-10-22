@@ -1,5 +1,5 @@
 // Десктоп и клавиатура: определение десктопа (мышь без сенсора, ?desktop /
-// ?mobile, первая игровая клавиша на сенсорном), колонка телефона, клавиши:
+// ?mobile, первая игровая клавиша на сенсорном), раскладка как на телефоне, клавиши:
 // рюкзак и вкладки, звук, касание мыши пробелом, карточки по Enter / 1 / 2.
 //   node tests/desktop.mjs
 import fs from 'node:fs';
@@ -36,7 +36,7 @@ const PHONE = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile:
   const p = g.page;
   check('мышь без сенсора — десктоп', await desk(p));
   const w = await p.evaluate(() => document.querySelector('.app').getBoundingClientRect().width);
-  check('колонка с пропорциями телефона', Math.abs(w - 800 * 390 / 844) < 2, { w });
+  check('ширина игры — как без десктопа (480), кнопки не наезжают на рюкзак', w === 480, { w });
   const hint = await p.evaluate(() => getComputedStyle(document.getElementById('btn-guard'), '::before').content);
   check('подпись клавиши на «Защите»', hint === '"A"', { hint });
   await p.screenshot({ path: path.join(OUT, 'desktop-1.png') });
