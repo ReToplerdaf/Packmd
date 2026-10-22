@@ -118,6 +118,8 @@ wire(el.strike, pressStrike);
 
 window.addEventListener('keydown', function (e) {
   if (e.repeat) return;
-  if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') { e.preventDefault(); pressGuard(); }
-  if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') { e.preventDefault(); pressStrike(); }
+  if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA)$/.test(e.target.tagName || '')) return;
+  // e.code — та же клавиша и в русской раскладке
+  if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a' || e.code === 'KeyA') { e.preventDefault(); pressGuard(); }
+  if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd' || e.code === 'KeyD') { e.preventDefault(); pressStrike(); }
 });
