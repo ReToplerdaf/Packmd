@@ -646,3 +646,35 @@ button.drop-verdict, .drop button.verdict {
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; }
 }
+
+/* ─── Десктоп (html.desktop, js/keys.js): колонка телефона и подписи клавиш ─── */
+
+/* Портретная колонка по центру с пропорциями телефона (390×844). */
+.desktop .app, .desktop .backpack-card { max-width: min(480px, calc(100vh * 390 / 844)); }
+
+/* Подпись клавиши — из data-key через ::before, в текст страницы не попадает. */
+.desktop [data-key]::before {
+  content: attr(data-key);
+  display: inline-block; min-width: 1.6em; margin-right: 6px; padding: 1px 4px;
+  border: 1px solid currentColor; border-radius: 3px;
+  font-family: var(--font-num); font-size: 10px; font-weight: 600; line-height: 1.4;
+  text-transform: none; letter-spacing: 0; text-align: center;
+  opacity: .7; vertical-align: 1px;
+  pointer-events: none;
+}
+.desktop .wedge[data-key]::before,
+.desktop .wedge-bag[data-key]::before {
+  position: absolute; margin: 0; opacity: .8;
+}
+/* вкладки узкие — подпись над названием */
+.desktop .tabs [data-key]::before { display: block; width: fit-content; margin: 0 auto 2px; }
+.desktop .wedge-shield::before { left: 22px; bottom: 38px; color: #132b1b; }
+.desktop .wedge-strike::before { right: 22px; bottom: 38px; color: #2c2008; }
+.desktop .wedge-bag::before { left: 50%; bottom: 6px; transform: translateX(-50%); color: #3a150c; }
+
+.keys-help { margin: 2px 0 10px; font-size: 12px; color: var(--ink-dim); line-height: 1.9; }
+.keys-help kbd {
+  display: inline-block; min-width: 1.5em; padding: 0 4px;
+  border: 1px solid var(--line); border-radius: 3px;
+  font-family: var(--font-num); font-size: 11px; text-align: center; color: var(--ink);
+}
