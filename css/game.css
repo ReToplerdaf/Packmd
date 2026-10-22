@@ -647,10 +647,8 @@ button.drop-verdict, .drop button.verdict {
   * { transition-duration: .01ms !important; }
 }
 
-/* ─── Десктоп (html.desktop, js/keys.js): колонка телефона и подписи клавиш ─── */
+/* ─── Десктоп (html.desktop, js/keys.js): подписи клавиш ─── */
 
-/* Портретная колонка по центру с пропорциями телефона (390×844). */
-.desktop .app, .desktop .backpack-card { max-width: min(480px, calc(100vh * 390 / 844)); }
 
 /* Подпись клавиши — из data-key через ::before, в текст страницы не попадает. */
 .desktop [data-key]::before {
