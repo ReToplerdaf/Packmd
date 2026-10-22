@@ -12,6 +12,7 @@ var S = {
   paused: false, pauseStart: 0,   // рюкзак открыт — бой стоит
   phase: 'walk', phaseUntil: 0,
   pack: [], packLevel: 1, packResist: 0, bossFled: false, memLeft: 0,
+  chiefSeen: false,               // карточка главаря уже показана
   progress: 0,                    // резинка по чекпоинтам: копится за пройденные стаи, тает при отступлении
   resist: 0,                      // память стаи о вашем уроне — переходит на следующий пак и затухает
   deathStreak: 0,                 // смертей подряд без победы между ними

@@ -71,7 +71,7 @@ function enterBiome(now) {
 // Последняя стая каждого биома — стая главаря: главарь и двое обычных
 // мобов свиты перед ним. Главарь не сбегает и не прячется; злость и короны —
 // как у вожака. Три фазы по здоровью, переход — пауза, вспышка, «ФАЗА N».
-var CHIEF_HP = 2.5;            // здоровье главаря — во столько раз больше, чем у вожака
+var CHIEF_HP = 4;              // здоровье главаря — во столько раз больше, чем у вожака
 var CHIEF_ATK = 1.1;           // и урон
 var CHIEF_XP = 5;              // опыт — ×5 от вожака
 var CHIEF_SIZE = 1.4;            // вожак — 1.25
@@ -82,6 +82,7 @@ var CHIEF_RAGE_ATK = 1.25;     // фаза 3: урон
 var CHIEF_RAGE_RATE = 0.8;     // фаза 3: ходы чаще
 var CHIEF_DOUBLE_GAP = 1200;   // фаза 2: между ударами двойного удара (больше отката щита)
 var CHIEF_MIN_RARITY = 2;      // гарантированная вещь — «Редкий» или выше (индекс в RARITY)
+var CHIEF_FEINT = 0.3;         // фаза 3: доля критов, которые начинаются с ложного замаха
 
 function isChiefPack() {
   if (!TUNE.biomes || !TUNE.adapt || !TUNE.chief || S.tut || S.progress < 0) return false;
@@ -108,4 +109,42 @@ function chiefTick(m, now) {
     m.shield = true;
     m.pulse = { start: now + dur(CHIEF_PHASE_PAUSE) - dur(PULSE_LEAD), hitAt: now + dur(CHIEF_PHASE_PAUSE) };
   }
+}
+
+// Крит главаря: фаза 1 — короче замах, фаза 3 — иногда ложный замах (меч
+// поднимается и раскаляется, но опускается назад; подсказки и метронома нет).
+function chiefCrit(m, now) {
+  if (m.chiefPhase === 3 && rnd() < CHIEF_FEINT) return { start: now, hitAt: now + dur(biomeLead()), mob: m, feint: true };
+  return { start: now, hitAt: now + dur(biomeLead() * chiefLeadMult(m)), mob: m };
+}
+
+// Ложный замах закончился без удара — сразу настоящий крит. Нажатая на финт
+// «Защита» ушла в откат, и настоящий удар уже не поймать.
+function chiefFeintEnd(tg, now) {
+  var burned = S.guardPressedAt > tg.start;
+  floatText(burned ? 'ФИНТ · щит сгорел' : 'ФИНТ', '#ff9130', 0, 0, false);
+  if (burned) comboBreak();
+  if (!tg.mob || tg.mob.hp <= 0 || S.phase !== 'fight' || S.pack.indexOf(tg.mob) < 0) return;
+  S.telegraph = { start: now, hitAt: now + dur(biomeLead()), mob: tg.mob };
+  sfx('telegraph');
+}
+
+// Первая встреча — карточка в стиле обучения (та же панель и та же пауза).
+// В авто карточку некому закрыть — покажем, когда игрок вернётся.
+function chiefIntroDue(m) { return m && m.chief && !S.chiefSeen && !AUTO.on && !S.tut; }
+function chiefIntro() {
+  S.chiefSeen = true;
+  markSave();
+  el.tutStep.textContent = 'НОВЫЙ ВРАГ';
+  el.tutOverlay.classList.remove('tut-top');
+  el.tutH.textContent = 'Главарь';
+  el.tutText.innerHTML = 'Последняя стая каждого биома — главарь со свитой. Он не сбегает, злится как вожак, а по здоровью меняет приёмы (полоса вверху).<ul>' +
+     '<li><b>Фаза 1.</b> Бьёт как обычный моб, но замах короче.</li>' +
+     '<li><b>Фаза 2.</b> Встаёт в щит: раскалывайте <b>Атакой</b> в такт. После раскола — <b>двойной удар</b>, блокируйте оба. Контра — после второго.</li>' +
+     '<li><b>Фаза 3.</b> Ярость: бьёт сильнее и чаще, иногда замахивается ложно. Кнопка щита на ложный замах не светится — нажмёте, и щит сгорит.</li></ul>';
+  el.tutSkip.hidden = true;
+  el.tutOk.textContent = 'В бой';
+  if (!S.paused) { S.paused = true; S.pauseStart = performance.now(); }
+  S.tutPaused = true;
+  el.tutOverlay.hidden = false;
 }
