@@ -99,6 +99,8 @@ body {
 .cp-stack i.on { background: rgba(235,60,45,.55); }            /* нижние — всегда красные */
 .cp-stack.t2 i.on.top { background: rgba(240,190,40,.50); }      /* откат — только верхний */
 .cp-stack.t1 i.on.top { background: rgba(70,190,95,.50); }
+/* Иконка биома — цветная точка в углу плашки «стая». */
+.hud-level.hud-cp > .cp-biome { position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; border-radius: 50%; background: var(--biome, #6b7aa8); box-shadow: 0 0 6px var(--biome, #6b7aa8); }
 .hud-level .kills.auto-tag { color: var(--accent); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .prompt-h.offline-h { color: var(--accent); }
 /* Серия точных нажатий — под плашкой «стая». Ступени: t1 зелёная, t2 голубая, t3 золотая. */
@@ -237,6 +239,8 @@ body {
 #btn-guard.armed  { filter: brightness(1.28) saturate(1.15); }
 #btn-guard.cool   { filter: brightness(.62) saturate(.7); }
 #btn-strike.window { filter: brightness(1.3) saturate(1.2); }
+/* кнопку держит летучая мышь налёта — не работает */
+.wedge.bat-blocked, #btn-guard.bat-blocked, #btn-strike.bat-blocked { filter: grayscale(.85) brightness(.5); }
 
 /* маленькие полоски-метры больше не показываем — их заменила подсветка кнопок */
 .wedge .meter {
@@ -480,6 +484,8 @@ button.drop-verdict, .drop button.verdict {
 .tut-card .prompt-p li { margin: 3px 0; }
 .tut-card .prompt-p b { color: var(--ink); }
 .tut-start { width: 100%; margin-bottom: 4px; }
+/* карточка про мышь — сверху: мышь сидит у кнопок внизу, её не закрываем */
+.tut-overlay.tut-top { align-items: flex-start; padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
 
 /* экипировка */
 .gear-row {
@@ -639,4 +645,34 @@ button.drop-verdict, .drop button.verdict {
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; }
+}
+
+/* ─── Десктоп (html.desktop, js/keys.js): подписи клавиш ─── */
+
+
+/* Подпись клавиши — из data-key через ::before, в текст страницы не попадает. */
+.desktop [data-key]::before {
+  content: attr(data-key);
+  display: inline-block; min-width: 1.6em; margin-right: 6px; padding: 1px 4px;
+  border: 1px solid currentColor; border-radius: 3px;
+  font-family: var(--font-num); font-size: 10px; font-weight: 600; line-height: 1.4;
+  text-transform: none; letter-spacing: 0; text-align: center;
+  opacity: .7; vertical-align: 1px;
+  pointer-events: none;
+}
+.desktop .wedge[data-key]::before,
+.desktop .wedge-bag[data-key]::before {
+  position: absolute; margin: 0; opacity: .8;
+}
+/* вкладки узкие — подпись над названием */
+.desktop .tabs [data-key]::before { display: block; width: fit-content; margin: 0 auto 2px; }
+.desktop .wedge-shield::before { left: 22px; bottom: 38px; color: #132b1b; }
+.desktop .wedge-strike::before { right: 22px; bottom: 38px; color: #2c2008; }
+.desktop .wedge-bag::before { left: 50%; bottom: 6px; transform: translateX(-50%); color: #3a150c; }
+
+.keys-help { margin: 2px 0 10px; font-size: 12px; color: var(--ink-dim); line-height: 1.9; }
+.keys-help kbd {
+  display: inline-block; min-width: 1.5em; padding: 0 4px;
+  border: 1px solid var(--line); border-radius: 3px;
+  font-family: var(--font-num); font-size: 11px; text-align: center; color: var(--ink);
 }

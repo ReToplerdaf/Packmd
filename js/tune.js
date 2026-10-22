@@ -5,12 +5,19 @@
    НАСТРОЙКИ БОЯ — то, что крутится ползунками
    ════════════════════════════════════════════════════════════════════ */
 
+// Отдельная версия игры «кружок» (index.html?circle, circle.html): все мобы —
+// кружок, свои настройки и сохранение, без биомов и обучения (см. circle.js).
+var CIRCLE_MODE = window.PACK_CIRCLE === true || /[?&]circle\b/.test(location.search);
+
 // Умолчания = настройки, выставленные для теста (присланы из игры 09.10).
 var TUNE_DEFAULTS = { lead: 500, guard: 150, cool: 900, critRate: 0.85, shieldRate: 0.55, mobRate: 3600, speed: 0.5, retreatWindow: 8000, rageStep: 0.5, pulseWindow: 300, sound: true, debug: false, adapt: true,
   healerRate: 0.2, yellowRate: 0.4, rangedRate: 0.32, rangedInterval: 2000, healInterval: 5000, rangedLead: 1050, yellowCounter: 300, fatigue: true, fatigueWindow: 900, packMin: 3, packMax: 5,
   autoAfter: 15000, autoBlock: 0.35,
   combo: true, perfect: 0.4,
-  pace: true, pacePacks: 8, paceStep: 0.04 };
+  pace: true, pacePacks: 8, paceStep: 0.04,
+  biomes: true, bossEvery: 10, biomePin: true, chief: true,
+  circleRed: 700, circleCool: 900, circleSpeed: 440, circleGreen: 3000,
+  bats: true, batEvery: 15000, biomeBg: false, biomeMods: false };
 var TUNE = JSON.parse(JSON.stringify(TUNE_DEFAULTS));
 
 var CRIT_MULT = 2.5;        // во сколько раз крит моба больнее обычного удара
@@ -57,14 +64,18 @@ function healFracFor(hpFrac) {
 
 // Новый ключ хранилища: старые сохранённые ползунки (до новых умолчаний)
 // больше не подхватываются — везде стартуем с TUNE_DEFAULTS.
-var TUNE_KEY = 'arena.tune.v2';
+var TUNE_KEY = CIRCLE_MODE ? 'arena.circle.tune' : 'arena.tune.v2';
 try {
   var saved = JSON.parse(localStorage.getItem(TUNE_KEY) || 'null');
   if (saved) for (var kk in saved) if (kk in TUNE) TUNE[kk] = saved[kk];
   // разовая миграция: красный больше не тратит ходы на блок, крит подняли до 85%
   if (saved && !saved.critMig && TUNE.critRate <= 0.7) TUNE.critRate = 0.85;
   TUNE.critMig = 1;
+  // разовая миграция: «кружок» стал вдвое быстрее
+  if (CIRCLE_MODE) { if (saved && !saved.circleMig && TUNE.circleSpeed === 220) TUNE.circleSpeed = 440; TUNE.circleMig = 1; }
 } catch (e) { /* приватное окно — просто идём с умолчаниями */ }
+
+if (CIRCLE_MODE) TUNE.biomes = false;   // в «кружке» — только эта механика
 
 function saveTune() {
   try { localStorage.setItem(TUNE_KEY, JSON.stringify(TUNE)); } catch (e) {}

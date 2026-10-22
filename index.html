@@ -22,6 +22,7 @@
     <!-- Номер чекпоинта — бейдж в верхнем левом углу, как уровень справа -->
     <div class="hud-level hud-cp" id="hud-cp">
       <div class="cp-stack" aria-hidden="true"><i></i><i></i><i></i></div>
+      <i class="cp-biome" id="cp-biome" hidden></i>
       <div class="k">стая</div>
       <div class="n" id="cp">0</div>
       <div class="kills" id="cp-mem" hidden>память ×<b id="cp-mem-n">0</b></div>
@@ -40,19 +41,19 @@
     </div>
 
     <div class="footer-wedges">
-      <button class="wedge wedge-shield" id="btn-guard" type="button" aria-label="Блок">
+      <button class="wedge wedge-shield" id="btn-guard" type="button" data-key="A" aria-label="Блок">
         <svg class="wedge-icon" viewBox="0 0 28 32" fill="none" stroke="#132b1b" stroke-width="1.8" stroke-linejoin="round"><path d="M14 2 2 7v8c0 8 5 13 12 15 7-2 12-7 12-15V7Z"/></svg>
         <span class="wedge-state" id="guard-sub">готов</span>
         <span class="wedge-label">Защита <span id="st-def">2</span></span>
         <span class="meter" id="guard-meter"></span>
       </button>
-      <button class="wedge wedge-strike" id="btn-strike" type="button" aria-label="Удар">
+      <button class="wedge wedge-strike" id="btn-strike" type="button" data-key="D" aria-label="Удар">
         <svg class="wedge-icon" viewBox="0 0 28 30" fill="none" stroke="#2c2008" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 24 22 8"/><path d="M22 8 26 4"/><path d="M4 26l2-2"/><path d="M3 21l6 6"/></svg>
         <span class="wedge-state" id="strike-sub">добивает</span>
         <span class="wedge-label">Атака <span id="st-atk">10</span></span>
         <span class="meter" id="strike-meter"></span>
       </button>
-      <button class="wedge-bag" id="btn-bag" type="button" aria-label="Рюкзак">
+      <button class="wedge-bag" id="btn-bag" type="button" data-key="B" aria-label="Рюкзак">
         <svg class="icon" viewBox="0 0 20 22" fill="none" stroke="#3a150c" stroke-width="1.7" stroke-linejoin="round"><path d="M6 7V5a4 4 0 0 1 8 0v2"/><rect x="2" y="7" width="16" height="13" rx="3"/><path d="M8 11h4"/></svg>
         <span class="bag-badge" id="bag-badge"></span>
       </button>
@@ -77,6 +78,13 @@
         <div class="tab-body" id="pane-tune" role="tabpanel" aria-labelledby="tab-tune" hidden>
           <div class="tune">
             <button type="button" class="prompt-btn tut-start" id="tut-start">Пройти обучение</button>
+            <div class="keys-help" id="keys-help" hidden>
+              <div class="save-h">Клавиши</div>
+              <div><kbd>A</kbd> <kbd>←</kbd> защита · <kbd>D</kbd> <kbd>→</kbd> атака</div>
+              <div><kbd>Пробел</kbd> <kbd>W</kbd> <kbd>↑</kbd> поймать мышь</div>
+              <div><kbd>B</kbd> рюкзак · <kbd>1</kbd>–<kbd>5</kbd> вкладки · <kbd>Esc</kbd> закрыть</div>
+              <div><kbd>Enter</kbd> кнопка карточки · <kbd>M</kbd> звук</div>
+            </div>
             <div class="tune-hint">Тап по строке выбирает ползунок, потом его можно двигать</div>
             <div class="tune-row">
               <label for="s-speed">Скорость боя</label><output id="o-speed">1.00×</output>
@@ -171,6 +179,30 @@
               <input type="range" id="s-pacestep" min="0" max="10" step="1" value="4">
             </div>
             <div class="tune-row">
+              <label for="s-batevery">Мышь прилетает раз в</label><output id="o-batevery">15 с</output>
+              <input type="range" id="s-batevery" min="5000" max="60000" step="1000" value="15000">
+            </div>
+            <div class="tune-row">
+              <label for="s-bossevery">Длина биома, стай</label><output id="o-bossevery">10</output>
+              <input type="range" id="s-bossevery" min="3" max="20" step="1" value="10">
+            </div>
+            <div class="tune-row circle-only" hidden>
+              <label for="s-circlered">Кружок: сколько горит красным</label><output id="o-circlered">700 мс</output>
+              <input type="range" id="s-circlered" min="200" max="2000" step="50" value="700">
+            </div>
+            <div class="tune-row circle-only" hidden>
+              <label for="s-circlecool">Кружок: откат после тычка</label><output id="o-circlecool">900 мс</output>
+              <input type="range" id="s-circlecool" min="0" max="3000" step="100" value="900">
+            </div>
+            <div class="tune-row circle-only" hidden>
+              <label for="s-circlespeed">Кружок: скорость</label><output id="o-circlespeed">440</output>
+              <input type="range" id="s-circlespeed" min="40" max="1200" step="20" value="440">
+            </div>
+            <div class="tune-row circle-only" hidden>
+              <label for="s-circlegreen">Кружок: зелёный до (случайно от 40%)</label><output id="o-circlegreen">3000 мс</output>
+              <input type="range" id="s-circlegreen" min="500" max="8000" step="250" value="3000">
+            </div>
+            <div class="tune-row">
               <label for="s-autoafter">Авто-режим через (0 — выключен)</label><output id="o-autoafter">15 с</output>
               <input type="range" id="s-autoafter" min="0" max="60000" step="5000" value="15000">
             </div>
@@ -185,6 +217,11 @@
               <label><input type="checkbox" id="c-fatigue" checked> Усталость от спама блока</label>
               <label><input type="checkbox" id="c-combo" checked> Серия и бонус к опыту</label>
               <label><input type="checkbox" id="c-pace" checked> Темп растёт со стаями</label>
+              <label><input type="checkbox" id="c-biomes" checked> Биомы</label>
+              <label><input type="checkbox" id="c-biomepin" checked> Отступление не уводит в прошлый биом</label>
+              <label><input type="checkbox" id="c-biomebg"> Фоны биомов (тяжёлые, могут тормозить)</label>
+              <label><input type="checkbox" id="c-biomemods"> Модификаторы биомов</label>
+              <label><input type="checkbox" id="c-bats" checked> Налёт летучих мышей</label>
             </div>
             <div class="tune-export">
               <button type="button" class="prompt-btn" id="tune-export">Скопировать мои настройки</button>
@@ -281,13 +318,13 @@
 
       <div class="backpack-foot">
         <div class="tabs" role="tablist">
-          <button type="button" role="tab" id="tab-loot"  aria-selected="true"  aria-controls="pane-loot">Лут</button>
-          <button type="button" role="tab" id="tab-gear"  aria-selected="false" aria-controls="pane-gear">Экип</button>
-          <button type="button" role="tab" id="tab-info"  aria-selected="false" aria-controls="pane-info">Инфо</button>
-          <button type="button" role="tab" id="tab-tune"  aria-selected="false" aria-controls="pane-tune">Настройка</button>
-          <button type="button" role="tab" id="tab-stats" aria-selected="false" aria-controls="pane-stats">Замеры</button>
+          <button type="button" role="tab" id="tab-loot"  aria-selected="true"  aria-controls="pane-loot" data-key="1">Лут</button>
+          <button type="button" role="tab" id="tab-gear"  aria-selected="false" aria-controls="pane-gear" data-key="2">Экип</button>
+          <button type="button" role="tab" id="tab-info"  aria-selected="false" aria-controls="pane-info" data-key="3">Инфо</button>
+          <button type="button" role="tab" id="tab-tune"  aria-selected="false" aria-controls="pane-tune" data-key="4">Настройка</button>
+          <button type="button" role="tab" id="tab-stats" aria-selected="false" aria-controls="pane-stats" data-key="5">Замеры</button>
         </div>
-        <button type="button" class="backpack-close" id="backpack-close">Закрыть ×</button>
+        <button type="button" class="backpack-close" id="backpack-close" data-key="Esc">Закрыть ×</button>
       </div>
     </div>
   </div>
@@ -298,7 +335,7 @@
       <div class="prompt-h" id="tut-h"></div>
       <div class="prompt-p" id="tut-text"></div>
       <div class="prompt-actions">
-        <button type="button" class="prompt-btn" id="tut-ok">Понятно</button>
+        <button type="button" class="prompt-btn" id="tut-ok" data-key="Enter">Понятно</button>
         <button type="button" class="prompt-btn alt" id="tut-skip">Пропустить обучение</button>
       </div>
     </div>
@@ -309,7 +346,7 @@
       <div class="prompt-h">Герой пал</div>
       <p class="prompt-p" id="death-text"></p>
       <div class="prompt-actions">
-        <button type="button" class="prompt-btn" id="death-next">Дальше</button>
+        <button type="button" class="prompt-btn" id="death-next" data-key="Enter">Дальше</button>
       </div>
     </div>
   </div>
@@ -319,7 +356,7 @@
       <div class="prompt-h offline-h">Пока вас не было</div>
       <p class="prompt-p" id="offline-text"></p>
       <div class="prompt-actions">
-        <button type="button" class="prompt-btn" id="offline-ok">Забрать</button>
+        <button type="button" class="prompt-btn" id="offline-ok" data-key="Enter">Забрать</button>
       </div>
     </div>
   </div>
@@ -329,8 +366,8 @@
       <div class="prompt-h">Второй раз подряд</div>
       <p class="prompt-p" id="prompt-text"></p>
       <div class="prompt-actions">
-        <button type="button" class="prompt-btn" id="prompt-retreat">Отойти к чекпоинту</button>
-        <button type="button" class="prompt-btn alt" id="prompt-ack">Понял, сменю снаряжение</button>
+        <button type="button" class="prompt-btn" id="prompt-retreat" data-key="1">Отойти к чекпоинту</button>
+        <button type="button" class="prompt-btn alt" id="prompt-ack" data-key="2">Понял, сменю снаряжение</button>
       </div>
     </div>
   </div>
@@ -340,6 +377,7 @@
 <script src="js/core.js"></script>
 <script src="js/tune.js"></script>
 <script src="js/state.js"></script>
+<script src="js/biome.js"></script>
 <script src="js/pack.js"></script>
 <script src="js/tutorial.js"></script>
 <script src="js/progress.js"></script>
@@ -350,12 +388,14 @@
 <script src="js/render.js"></script>
 <script src="js/render-mob.js"></script>
 <script src="js/render-fx.js"></script>
+<script src="js/circle.js"></script>
 <script src="js/hud.js"></script>
 <script src="js/inventory.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/save.js"></script>
 <script src="js/auto.js"></script>
 <script src="js/controls.js"></script>
+<script src="js/keys.js"></script>
 <script src="js/main.js"></script>
 
 </body></html>

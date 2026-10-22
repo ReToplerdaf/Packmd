@@ -4,8 +4,8 @@
 // «Начать заново» во вкладке «Настройка».
 "use strict";
 
-var SAVE_KEY = 'arena.save';
-var SAVE_BROKEN_KEY = 'arena.save.broken';
+var SAVE_KEY = CIRCLE_MODE ? 'arena.circle.save' : 'arena.save';
+var SAVE_BROKEN_KEY = SAVE_KEY + '.broken';
 var SAVE_VERSION = 1;
 var SAVE_PREFIX = 'PACK1:';
 
@@ -135,7 +135,7 @@ function itemIn(o) {
            stats: stats, rolls: rolls, score: scoreStats(stats) };
 }
 
-var INFO_KINDS = { level: 1, flee: 1, retreat: 1, ack: 1, lost: 1, full: 1, broken: 1, offline: 1, pace: 1 };
+var INFO_KINDS = { level: 1, flee: 1, retreat: 1, ack: 1, lost: 1, full: 1, broken: 1, offline: 1, biome: 1, chief: 1, pace: 1 };
 
 // Разбирает сохранение (уже распарсенный JSON) в готовые для S значения.
 // Бросает ошибку, если сохранение не подходит целиком.
@@ -182,6 +182,7 @@ function parseSave(d) {
     if (n.kind === 'retreat') { e.progress = int(n.progress, -1e6, 1e6, 0); if (n.auto) e.auto = true; }
     if (n.kind === 'offline') { e.ms = num(n.ms, 0, 1e9, 0); e.kills = int(n.kills, 0, 1e9, 0); e.xp = int(n.xp, 0, 1e12, 0); }
     if (n.kind === 'pace') { e.pace = int(n.pace, 0, PACE_CAP, 0); if (n.up) e.up = true; }
+    if (n.kind === 'biome' || n.kind === 'chief') e.biome = int(n.biome, 0, 1e6, 0);
     if (n.kind === 'lost') e.count = int(n.count, 0, 1e6, 0);
     if (n.kind === 'full') { e.item = itemIn(n.item); if (!e.item) continue; }
     info.push(e);
