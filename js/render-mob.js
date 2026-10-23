@@ -245,13 +245,14 @@ function drawMob(m, x, gy, t, isFront) {
     ctx.shadowBlur = 0;
     if (hk > 0) { ctx.globalAlpha = 0.6 * hk; ctx.drawImage(chiefTint(m.type, '#7cec8c'), 0, 0); ctx.globalAlpha = 1; }
     // Глаза. Хилер: пока каста нет — тёмные, на касте разгораются красным
-    // (как сфера посоха), в момент лечения вспышка и гаснут. Дальник: как
+    // (как сфера посоха), в момент лечения вспышка и гаснут; в ярости — зелёные. Дальник: как
     // раньше — загораются, когда по герою прошёл его выстрел (злость).
     var mglow = 0, mcol = '255,70,60';
     if (m.type === 'healer') {
       var hp = m.healPulse;
       if (hp) mglow = Math.min(1, Math.max(0, (t - hp.start) / Math.max(1, hp.hitAt - hp.start)));
       if (m.healFlashAt && t - m.healFlashAt >= 0 && t - m.healFlashAt < 420) mglow = Math.max(mglow, 1 - (t - m.healFlashAt) / 420);
+      if (m.healRage) { mglow = 1; mcol = '90,255,120'; }   // ярость: глаза горят зелёным до конца яростного каста
     } else {
       var mr = (m.rangedRage || 0) > 0 ? RANGED_RAGE_LOOK : 0;
       if (mr > 0) { mglow = 1; mcol = ['255,210,122', '255,154,74', '255,59,47'][Math.min(2, mr - 1)]; }

@@ -72,6 +72,7 @@ bindToggle('c-combo', 'combo');
 bindToggle('c-biomes', 'biomes');
 bindToggle('c-biomepin', 'biomePin');
 bindToggle('c-bats', 'bats');
+bindToggle('c-healrage', 'healRage');
 bindToggle('c-biomebg', 'biomeBg');
 bindToggle('c-biomemods', 'biomeMods');
 
