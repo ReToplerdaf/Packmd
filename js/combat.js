@@ -130,6 +130,7 @@ function missShieldPulse(mob, now) {
 // Зелёный Хилер: обратный пульс, который лечит случайного союзника в стае,
 // если его не прервать ударом в то же окно, что обычно разбивает щит.
 function interruptHeal(mob, now) {
+  if (mob.healPulse.rage) mob.healRage = 0;   // яростный каст сорван — ярость прошла
   mob.healPulse = null;
   mob.healEndAt = performance.now();
   mob.hurt = now;
@@ -144,6 +145,16 @@ function interruptHeal(mob, now) {
 function resolveHeal(mob, now) {
   var hp = mob.healPulse;
   comboHealMissed(hp);             // каст не прервали, хотя могли
+  // Ярость хилера (как у дальника, на один раз): пропущенный обычный каст,
+  // который можно было прервать, вдвое сокращает промежуток до следующего;
+  // яростный каст сделан — ярость прошла.
+  if (hp && hp.rage) mob.healRage = 0;
+  else if (hp && hp.open && TUNE.healRage) {
+    mob.healRage = 1;
+    mob.healSwingAt = hp.start + (mob.healSwingAt - hp.start) * HEAL_RAGE_GAP;
+    sfx('enrage');
+    floatText('ЯРОСТЬ', '#5dff7a', 0, 0, false);
+  }
   mob.healPulse = null;
   mob.healEndAt = performance.now();
   mob.healFlashAt = performance.now();   // яркая вспышка сферы посоха в момент лечения
@@ -530,11 +541,16 @@ function step(now) {
         if (fr && fr.hp > 0 && fr.hp < fr.maxHp * 0.92) {
           hm.healSwingAt = now + dur(TUNE.healInterval * rr(0.85, 1.15));
           hm.healPulse = { start: now, hitAt: now + dur(PULSE_LEAD), target: fr };
+          if (hm.healRage) hm.healPulse.rage = 1;
           sfx('shield');
           floatText('ЛЕЧИТ', '#7cd88a', 0, 0, false);
           if (hm.tutKey) tutShow(hm.tutKey);
         }
       }
+      // Каст можно было прервать: его окно, «Атака» ушла бы в него (он первый,
+      // у переднего нет щита) и кнопку не держит мышь. Только такой злит хилера.
+      if (TUNE.healRage && hm.healPulse && !hm.healPulse.open && hm === activeHealer() && !(fr && fr.shield) && !batBlocks('strike') &&
+          now >= hm.healPulse.hitAt - dur(pulseGoodMs()) && now <= hm.healPulse.hitAt + dur(pulseLateMs())) hm.healPulse.open = true;
       // канал довели до конца, не прервав — долечивает
       if (hm.healPulse && now > hm.healPulse.hitAt + dur(pulseLateMs())) resolveHeal(hm, now);
     }
