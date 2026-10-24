@@ -44,7 +44,9 @@
   function snapshot(P) {
     var S = P.S;
     S.pack.forEach(mobId);
+    var skip = cfg.ignoreState || [];   // новые поля S, которых нет в эталоне (см. equivalence --ignore-state)
     return JSON.stringify(S, function (k, v) {
+      if (this === S && skip.indexOf(k) >= 0) return undefined;
       if (v && typeof v === 'object' && 'maxHp' in v && 'type' in v && this !== S.pack) return '@' + mobId(v);
       if (typeof v === 'number' && !isFinite(v)) return String(v);
       return v;
@@ -116,7 +118,7 @@
     var gw = P.dur(P.guardWindow());
     // Защита: крит ближнего и выстрелы — жмём в середине окна блока.
     var defs = [];
-    if (S.telegraph) defs.push(S.telegraph);
+    if (S.telegraph && !S.telegraph.feint) defs.push(S.telegraph);   // ложный замах без подсказки — бот его не жмёт
     for (var i = 0; i < S.pack.length; i++) {
       var rm = S.pack[i];
       if (rm.type === 'ranged' && rm.rangedTelegraph && rm.hp > 0) defs.push(rm.rangedTelegraph);

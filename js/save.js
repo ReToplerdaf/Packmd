@@ -68,7 +68,8 @@ function buildSave() {
     hero: { level: S.level, xp: S.xp, hp: dead || S.tut ? S.stats.maxHp : S.hp, kills: S.kills },
     gear: gear,
     bag: bag,
-    pack: { progress: S.progress, resist: S.resist, memLeft: S.memLeft, bossFled: S.bossFled, deathStreak: S.deathStreak },
+    pack: { progress: S.progress, resist: S.resist, memLeft: S.memLeft, bossFled: S.bossFled, deathStreak: S.deathStreak,
+            chiefSeen: S.chiefSeen },
     combo: { best: COMBO.bestEver },
     info: info
   };
@@ -86,6 +87,7 @@ function saveData() {
     d.pack.resist = S.resist; d.pack.memLeft = S.memLeft;
     d.pack.bossFled = d.pack.bossFled || S.bossFled;
   }
+  d.pack.chiefSeen = S.chiefSeen;      // карточку главаря второй раз не показываем
   return d;
 }
 
@@ -198,6 +200,7 @@ function parseSave(d) {
     resist: resist,
     memLeft: resist ? int(p.memLeft, 0, MEM_PACKS, 0) : 0,
     bossFled: !!p.bossFled,
+    chiefSeen: !!p.chiefSeen,
     deathStreak: int(p.deathStreak, 0, 1000, 0),
     comboBest: int(d.combo && d.combo.best, 0, 1e6, 0)
   };
@@ -207,7 +210,7 @@ function applySave(v) {
   S.level = v.level; S.xp = v.xp; S.kills = v.kills;
   S.gear = v.gear; S.log = v.log; S.info = v.info;
   S.progress = v.progress; S.resist = v.resist; S.memLeft = v.memLeft;
-  S.bossFled = v.bossFled; S.deathStreak = v.deathStreak;
+  S.bossFled = v.bossFled; S.deathStreak = v.deathStreak; S.chiefSeen = v.chiefSeen;
   COMBO.bestEver = v.comboBest;
   recalc();
   S.hp = v.hp >= 1 ? Math.min(v.hp, S.stats.maxHp) : S.stats.maxHp;

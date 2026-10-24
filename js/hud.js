@@ -35,7 +35,7 @@ function buttonCues(t) {
   if (S.phase === 'fight' && !S.paused) {
     var gwd = dur(guardWindow());
     var defs = [];
-    if (S.telegraph) defs.push(S.telegraph);
+    if (S.telegraph && !S.telegraph.feint) defs.push(S.telegraph);   // ложный замах не подсвечивается
     for (var i = 0; i < S.pack.length; i++) {
       var rm = S.pack[i];
       if (rm.type === 'ranged' && rm.rangedTelegraph && rm.hp > 0) defs.push(rm.rangedTelegraph);

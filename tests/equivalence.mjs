@@ -19,6 +19,7 @@ const target = path.resolve(ROOT, opt('--target', 'index.html'));
 const quick = args.includes('--quick');
 const extraTune = opt('--tune', null) ? JSON.parse(opt('--tune')) : null;
 const noUi = args.includes('--no-ui');
+const ignoreState = opt('--ignore-state', null) ? opt('--ignore-state').split(',') : null;
 
 const ui = {
   3000: 'open', 3010: 'tab:tab-loot', 3020: 'select', 3030: 'equip', 3040: 'tab:tab-gear',
@@ -41,6 +42,7 @@ const scenarios = [
 ];
 
 if (extraTune) for (const sc of scenarios) sc.cfg.tune = Object.assign({}, sc.cfg.tune, extraTune);
+if (ignoreState) for (const sc of scenarios) sc.cfg.ignoreState = ignoreState;
 
 const browser = await launch();
 const refPath = checkoutRef(ref);
