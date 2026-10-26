@@ -61,7 +61,7 @@ const url = 'http://127.0.0.1:' + server.address().port + '/index.html';
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.addInitScript(() => { try { localStorage.setItem('arena.tutorial.done', '1'); } catch (e) {} });
+  await page.addInitScript(() => { try { localStorage.setItem('arena.tutorial.done', '1'); } catch (e) {} window.PACK_NOSPLASH = true; });
   await page.goto(url);
   await page.waitForTimeout(800);
 

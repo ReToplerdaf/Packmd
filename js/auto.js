@@ -139,6 +139,7 @@ function offlineSince(at) {
 }
 
 document.addEventListener('visibilitychange', function () {
+  if (SAVE.off) return;                     // заставка: бой ещё не начат
   if (document.hidden) { AUTO.hiddenAt = Date.now(); return; }
   if (!AUTO.hiddenAt) return;
   var gap = Date.now() - AUTO.hiddenAt;

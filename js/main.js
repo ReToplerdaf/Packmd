@@ -47,7 +47,7 @@ if (window.claude && window.claude.hot) {
   try {
     window.claude.hot.snapshot(function () { return { level: S.level, kills: S.kills }; });
   } catch (e) {}
-  window.claude.hot.ready ? window.claude.hot.ready(start) : start({});
+  window.claude.hot.ready ? window.claude.hot.ready(function (r) { splashThen(function () { start(r); }); }) : splashThen(function () { start({}); });
 } else {
-  start({});
+  splashThen(function () { start({}); });
 }

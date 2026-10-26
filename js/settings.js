@@ -60,6 +60,8 @@ bindSlider('s-autoafter','o-autoafter','autoAfter', function (v) { return v ? (v
 bindSlider('s-pacepacks','o-pacepacks','pacePacks', function (v) { return v; });
 bindSlider('s-pacestep','o-pacestep','paceStep', function (v) { return v + ' %'; }, 100);
 bindSlider('s-autoblock','o-autoblock','autoBlock', function (v) { return v + ' %'; }, 100);
+bindSlider('s-musicvol','o-musicvol','musicVol', function (v) { return v + ' %'; }, 100);
+$('s-musicvol').addEventListener('input', musicUpdate);
 
 function bindToggle(id, key, after) {
   var c = $(id);
@@ -67,6 +69,7 @@ function bindToggle(id, key, after) {
   c.addEventListener('change', function () { TUNE[key] = c.checked; saveTune(); if (after) after(); });
 }
 bindToggle('c-sound', 'sound', unlockAudio);
+bindToggle('c-music', 'music', musicUpdate);
 bindToggle('c-debug', 'debug');
 bindToggle('c-adapt', 'adapt');
 bindToggle('c-fatigue', 'fatigue');
