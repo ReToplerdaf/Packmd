@@ -223,8 +223,13 @@
               <label for="s-autoblock">Авто-блок критов и выстрелов</label><output id="o-autoblock">35 %</output>
               <input type="range" id="s-autoblock" min="0" max="80" step="5" value="35">
             </div>
+            <div class="tune-row">
+              <label for="s-musicvol">Громкость музыки</label><output id="o-musicvol">40 %</output>
+              <input type="range" id="s-musicvol" min="0" max="100" step="5" value="40">
+            </div>
             <div class="toggles">
               <label><input type="checkbox" id="c-sound" checked> Звук</label>
+              <label><input type="checkbox" id="c-music" checked> Музыка</label>
               <label><input type="checkbox" id="c-debug"> Показать тайминги</label>
               <label><input type="checkbox" id="c-adapt" checked> Адаптивная сложность</label>
               <label><input type="checkbox" id="c-fatigue" checked> Усталость от спама блока</label>
@@ -386,8 +391,32 @@
     </div>
   </div>
 
+  <div class="prompt-overlay splash" id="splash" hidden>
+    <div class="splash-main">
+      <div class="splash-title">PACK</div>
+      <div class="splash-sub">стая ждёт</div>
+      <div class="splash-toggles">
+        <button type="button" class="splash-tog" id="splash-sound" aria-pressed="true">Звук</button>
+        <button type="button" class="splash-tog" id="splash-music" aria-pressed="true">Музыка</button>
+      </div>
+      <button type="button" class="prompt-btn splash-start" id="splash-start" data-key="Enter">Старт</button>
+    </div>
+    <div class="splash-foot">
+      <div class="splash-msg" id="splash-msg" hidden></div>
+      <div class="splash-confirm" id="splash-confirm" hidden>
+        <div>Герой, снаряжение и рюкзак будут удалены. Точно начать заново?</div>
+        <div class="prompt-actions">
+          <button type="button" class="prompt-btn danger" id="splash-yes">Да, удалить прогресс</button>
+          <button type="button" class="prompt-btn alt" id="splash-no">Отмена</button>
+        </div>
+      </div>
+      <button type="button" class="splash-reset" id="splash-reset">Сбросить прогресс</button>
+    </div>
+  </div>
+
 </div>
 
+<audio id="music" src="audio/focus-flow.mp3" loop preload="auto"></audio>
 <script src="js/core.js"></script>
 <script src="js/tune.js"></script>
 <script src="js/state.js"></script>
@@ -411,6 +440,7 @@
 <script src="js/auto.js"></script>
 <script src="js/controls.js"></script>
 <script src="js/keys.js"></script>
+<script src="js/splash.js"></script>
 <script src="js/main.js"></script>
 
 </body></html>

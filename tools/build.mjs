@@ -17,7 +17,10 @@ html = html.replace(/<script src="(js\/[^"]+)"><\/script>/g, (_, p) => {
   if (/<\/script/i.test(js)) throw new Error(p + ': внутри есть </script>');
   return '<script>\n' + js + '</script>';
 });
-if (/(href|src)="(css|js)\//.test(html)) throw new Error('остались внешние файлы');
+// Музыка — data:-ссылкой внутри файла.
+html = html.replace(/<audio([^>]*) src="(audio\/[^"]+\.mp3)"/g, (_, a, p) =>
+  '<audio' + a + ' src="data:audio/mpeg;base64,' + fs.readFileSync(path.join(root, p)).toString('base64') + '"');
+if (/(href|src)="(css|js|audio)\//.test(html)) throw new Error('остались внешние файлы');
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist/pack.html'), html);
 console.log('dist/pack.html', (html.length / 1024).toFixed(1) + ' КБ');

@@ -168,3 +168,28 @@ function sfx(kind, arg) {
     case 'comboBreak': tone(200, 90, 0.20, 'triangle', 0.10); break;
   }
 }
+
+/* ── Фоновая музыка ──────────────────────────────────────────────────
+   Трек автора «Focus Flow» (audio/focus-flow.mp3) по кругу через <audio>:
+   так он играет и через file://, и одним файлом (сборка встраивает его).
+   Браузер даёт начать звук только после касания или клавиши — первое
+   же касание где угодно включает музыку. Тумблер «Музыка» отдельный от
+   «Звука» (эффекты и метроном), громкость — ползунком; на свёрнутой
+   вкладке молчит. На бой не влияет. */
+var music = document.getElementById('music');
+var musicArmed = false;   // было касание — браузер разрешит play()
+
+function musicUpdate() {
+  if (!music) return;
+  music.volume = Math.max(0, Math.min(1, TUNE.musicVol));
+  var on = musicArmed && TUNE.music && TUNE.musicVol > 0 && !document.hidden;
+  if (on && music.paused) {
+    var p = music.play();
+    if (p && p.catch) p.catch(function () {});
+  } else if (!on && !music.paused) music.pause();
+}
+
+['pointerdown', 'keydown'].forEach(function (ev) {
+  document.addEventListener(ev, function () { musicArmed = true; musicUpdate(); }, true);
+});
+document.addEventListener('visibilitychange', musicUpdate);

@@ -16,7 +16,7 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-await page.addInitScript(() => { try { localStorage.setItem('arena.tutorial.done', '1'); } catch (e) {} });
+await page.addInitScript(() => { try { localStorage.setItem('arena.tutorial.done', '1'); } catch (e) {} window.PACK_NOSPLASH = true; });
 await page.goto(pathToFileURL(file).href);
 await page.waitForTimeout(6000);
 const st = await page.evaluate(() => { const S = window.__pack ? __pack.S : window.S; return { phase: S.phase, packLen: S.pack.length, hp: S.hp, heroSwingAt: S.heroSwingAt > 0, kills: S.kills }; });

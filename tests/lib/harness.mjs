@@ -31,7 +31,7 @@ export function checkoutRef(ref) {
   const dir = path.join(OUT, 'ref-' + sha);
   if (!fs.existsSync(path.join(dir, 'index.html'))) {
     fs.mkdirSync(dir, { recursive: true });
-    const tar = execFileSync('git', ['-C', ROOT, 'archive', sha]);
+    const tar = execFileSync('git', ['-C', ROOT, 'archive', sha], { maxBuffer: 1 << 30 });
     execFileSync('tar', ['-x', '-C', dir], { input: tar });
     const f = path.join(dir, 'index.html');
     let html = fs.readFileSync(f, 'utf8');
@@ -55,7 +55,7 @@ export async function openGame(browser, htmlPath, cfg = {}) {
   const errors = [];
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
-  await page.addInitScript(`window.__DRV_CFG = ${JSON.stringify(cfg)};\n${DRIVER}`);
+  await page.addInitScript(`window.PACK_NOSPLASH = true; window.__DRV_CFG = ${JSON.stringify(cfg)};\n${DRIVER}`);
   await page.goto(pathToFileURL(htmlPath).href + (cfg.query || ''));
   await page.evaluate(HOOK_IF_MISSING);
   return { page, errors, close: () => ctx.close() };

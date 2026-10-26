@@ -52,6 +52,7 @@ window.addEventListener('keydown', function (e) {
   var enter = k === 'Enter' || k === ' ';
 
   // Карточки поверх боя — по старшинству, как они лежат друг на друге.
+  if (visibleOverlay('splash')) return;     // у заставки свои клавиши (splash.js)
   if (visibleOverlay('tut-overlay')) { if (enter) { done(); tutClose(); } return; }
   if (visibleOverlay('offline-overlay')) { if (enter) { done(); closeOffline(); } return; }
   if (visibleOverlay('death-overlay')) { if (enter) { done(); closeDeath(); } return; }
