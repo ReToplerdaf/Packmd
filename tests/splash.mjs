@@ -1,6 +1,7 @@
 // Стартовая заставка и музыка: бой ждёт «Старта», звук и музыка включаются
 // отдельно (и попадают в «Настройку»), сброс прогресса — только после
-// подтверждения, пока заставка на экране, сохранение не затирается.
+// подтверждения, пока заставка на экране, сохранение не затирается; пока
+// жив главарь — его трек вместо основного.
 //   node tests/splash.mjs [--shot файл.png]
 import http from 'node:http';
 import fs from 'node:fs';
@@ -54,10 +55,20 @@ await page.waitForTimeout(2500);
 s = await st();
 check('«Старт» начинает бой', !s.splash && s.started);
 check('музыка играет', s.playing);
+const mus = () => page.evaluate(() => ({ main: !$('music').paused, boss: !$('music-boss').paused, t: $('music').currentTime }));
+await page.evaluate(() => { const m = S.pack.find(x => x.hp > 0); m.chief = true; });
+await page.waitForTimeout(2000);
+let m = await mus();
+check('главарь жив — играет его трек, основной замолк', m.boss && !m.main);
+const tMain = m.t;
+await page.evaluate(() => { S.pack.forEach(x => { x.chief = false; }); });
+await page.waitForTimeout(2000);
+m = await mus();
+check('главаря нет — основной трек продолжается с того же места', m.main && !m.boss && m.t >= tMain && m.t < tMain + 4);
 await page.click('#btn-bag'); await page.click('#tab-tune');
 await page.click('label:has(#c-music)');
 s = await st();
-check('тумблер «Музыка» в Настройке глушит музыку', !s.music && !s.playing);
+check('тумблер «Музыка» в Настройке глушит музыку', !s.music && !s.playing && await page.evaluate(() => $('music-boss').paused));
 await page.click('label:has(#c-music)');
 await page.dispatchEvent('#backpack-close', 'pointerdown');
 
