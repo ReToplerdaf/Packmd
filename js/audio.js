@@ -172,7 +172,7 @@ function sfx(kind, arg) {
 /* ── Фоновая музыка ──────────────────────────────────────────────────
    Трек автора «Focus Flow» (audio/focus-flow.mp3) по кругу через <audio>:
    так он играет и через file://, и одним файлом (сборка встраивает его).
-   Пока жив главарь — свой трек (audio/boss.mp3, с начала), основной
+   Пока главарь впереди (сам бой с ним, не его свита) — свой трек (audio/boss.mp3, с начала), основной
    замолкает и потом продолжается с того же места; смена — плавная.
    Браузер даёт начать звук только после касания или клавиши — первое
    же касание где угодно включает музыку. Тумблер «Музыка» отдельный от
@@ -196,8 +196,8 @@ function musicTick() {
   var now = performance.now(), dt = musicMix.at ? Math.min(100, now - musicMix.at) : 0;
   musicMix.at = now;
   var on = musicArmed && TUNE.music && TUNE.musicVol > 0 && !document.hidden;
-  var c = typeof chiefMob === 'function' ? chiefMob() : null;
-  var boss = !!(musicBoss && c && c.hp > 0);
+  var c = front();   // свита главаря — ещё под основной трек
+  var boss = !!(musicBoss && c && c.chief && c.hp > 0);
   if (boss && !musicMix.bossOn) { try { musicBoss.currentTime = 0; } catch (e) {} }
   musicMix.bossOn = boss;
   var step = dt / MUSIC_FADE_MS;
