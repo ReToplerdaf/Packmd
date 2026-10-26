@@ -181,6 +181,71 @@ function drawDebug(t) {
   ctx.restore();
 }
 
+// Задники биомов-картинки: ключ в CHIEF_IMG и дальняя точка (доля ширины картинки).
+var BIOME_BG_IMG = { river: ['bgRiver', 0.3, 'stalk'] };
+// Берега русла на картинке задника (px картинки, от дальней точки к краю;
+// последние точки — за кадром): на них сажаем бамбук, по левому стоит
+// очередь стаи.
+var BIOME_BANKS = {
+  river: {
+    left: [[282, 542], [180, 625], [60, 725], [0, 775], [-160, 905]],
+    right: [[292, 536], [470, 586], [640, 640], [780, 700], [1024, 800], [1200, 880]]
+  }
+};
+// Линия ракурса стаи на задника (от автора): от дальней точки к зрителю;
+// front — где ноги переднего моба, slots — очередь: [y ног, ширина моба].
+var BIOME_PATH = {
+  river: { line: [[292, 537], [505, 1020]], front: 830, slots: [[683, 70], [625, 55], [585, 38], [557, 25]] }
+};
+function bankPt(line, u) {   // точка на ломаной, u 0…1 по длине
+  var L = 0, i, seg = [];
+  for (i = 1; i < line.length; i++) { var l = Math.hypot(line[i][0] - line[i - 1][0], line[i][1] - line[i - 1][1]); seg.push(l); L += l; }
+  var r = u * L;
+  for (i = 0; i < seg.length; i++) {
+    if (r <= seg[i] || i === seg.length - 1) { var q = Math.min(1, r / seg[i]); return [line[i][0] + (line[i + 1][0] - line[i][0]) * q, line[i][1] + (line[i + 1][1] - line[i][1]) * q]; }
+    r -= seg[i];
+  }
+}
+// докуда (по длине ломаной) берег ещё на экране
+function bankVisible(line) {
+  for (var u = 0.02; u < 1; u += 0.02) { var x = bgToScreen(bankPt(line, u))[0]; if (x < -20 || x > W + 20) return u; }
+  return 1;
+}
+function bgToScreen(p) { return [BG_XF.bx + p[0] * BG_XF.bk, BG_XF.by + p[1] * BG_XF.bk]; }
+// Стебли поверх задника: по 9 с каждой стороны русла, стоят вдоль стен от
+// дальней точки к краям экрана, только качаются на ветру. Без rnd() — бой не сбивают.
+var BG_STALKS = (function () {
+  var a = [];
+  for (var i = 0; i < 18; i++) a.push({ side: i % 2 ? 1 : -1, u: ((i >> 1) + 0.5 + 0.35 * (((i * 53) % 7) / 7 - 0.5)) / 9, jit: ((i * 37) % 11) / 11, ph: i * 1.7 });
+  return a;
+})();
+var BG_BOTTOM = 56;   // px: под задником — полосы здоровья и опыта (.footer-wedges bottom)
+// Стебли сажаются на берег (или чуть дальше в заросли), высота — по
+// перспективе: чем ниже на экране основание, тем ближе и выше стебель.
+function drawBgStalks(im, t, banks) {
+  var vy = bgToScreen(banks.left[0])[1], list = [];
+  var uL = bankVisible(banks.left), uR = bankVisible(banks.right);
+  for (var i = 0; i < BG_STALKS.length; i++) {
+    var sk = BG_STALKS[i], u = (sk.side < 0 ? uL : uR) * Math.pow(sk.u, 1.2);
+    var p = bankPt(sk.side < 0 ? banks.left : banks.right, u);
+    var sp = bgToScreen([p[0] + sk.side * 14 * sk.jit, p[1] + 10 * sk.jit]);   // чуть за линией берега
+    list.push({ sk: sk, x: sp[0], y: sp[1] });
+  }
+  list.sort(function (a, b) { return a.y - b.y; });
+  for (i = 0; i < list.length; i++) {
+    var it = list[i], dep = Math.max(0, it.y - vy);
+    var hgt = dep * 3.6, k = hgt / im.height;
+    if (hgt < 6) continue;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, 0.55 + dep / 220);   // вдали тают в дымке
+    ctx.translate(it.x, it.y);
+    ctx.rotate((0.02 + 0.03 * it.sk.jit) * Math.sin(t / 1700 + it.sk.ph));   // ветер
+    ctx.scale(k * it.sk.side, k);
+    ctx.drawImage(im, -im.width / 2, -im.height);
+    ctx.restore();
+  }
+}
+
 var lastRenderT = 0;
 function render(t) {
   ctx.clearRect(0, 0, W, H);
@@ -195,7 +260,22 @@ function render(t) {
   var grd = ctx.createLinearGradient(0, 0, 0, H);
   grd.addColorStop(0, bgc[0]); grd.addColorStop(1, bgc[1]);
   ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
-  if (bio !== BIOME_PLAIN && TUNE.biomeBg) drawBiomeBack(bio, gy, t);
+  // Задник-картинка (пока есть только у русла): лёгкий, рисуется всегда,
+  // вместо и цвета, и тяжёлого фона. Растянут по высоте экрана, по ширине
+  // сдвинут так, чтобы дальняя точка русла была левее середины.
+  var bgImg = bio !== BIOME_PLAIN && BIOME_BG_IMG[bio.id] ? CHIEF_IMG[BIOME_BG_IMG[bio.id][0]] : null;
+  BG_XF = null;
+  if (bgImg) {
+    var bH = H - BG_BOTTOM;   // низ задника — по нижнему краю кнопок
+    var bk = Math.max(W / bgImg.width, bH / bgImg.height), bw2 = bgImg.width * bk;
+    var bpa = BIOME_PATH[bio.id];
+    // передний моб — по центру экрана; без линии ракурса — дальняя точка левее середины
+    var bx = Math.min(0, Math.max(W - bw2, bpa ? 0.5 * W - pathLineX(bpa, bpa.front) * bk : 0.47 * W - BIOME_BG_IMG[bio.id][1] * bw2));
+    ctx.drawImage(bgImg, bx, bH - bgImg.height * bk, bw2, bgImg.height * bk);
+    BG_XF = { bx: bx, by: bH - bgImg.height * bk, bk: bk, banks: BIOME_BANKS[bio.id] || null, path: bpa || null };
+    var stIm = CHIEF_IMG[BIOME_BG_IMG[bio.id][2]];
+    if (stIm && BG_XF.banks) drawBgStalks(stIm, t, BG_XF.banks);
+  } else if (bio !== BIOME_PLAIN && TUNE.biomeBg) drawBiomeBack(bio, gy, t);
 
   ctx.save();
   var sh = S.shake > 0 ? S.shake : 0;

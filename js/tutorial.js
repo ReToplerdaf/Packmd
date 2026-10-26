@@ -12,6 +12,7 @@
 var TUT_KEY = 'arena.tutorial.done';
 var TUT_ORDER = ['normal', 'yellow', 'ranged', 'bat', 'healer', 'leader'];
 function tutTotal() { return TUT_ORDER.length - (TUNE.bats ? 0 : 1); }
+var HEAL_RAGE_TIP = '<li>Не прервали каст — хилер в <b>ярости</b>: глаза горят зелёным, следующий каст придёт вдвое быстрее.</li>';
 var TUT_TIPS = {
   normal: { h: 'Обычный моб',
     p: 'Бой идёт сам: герой бьёт переднего моба. Вы вмешиваетесь двумя кнопками.<ul>' +
@@ -102,7 +103,8 @@ function tutShow(key) {
   el.tutStep.textContent = key === 'done' ? 'ОБУЧЕНИЕ' : 'ОБУЧЕНИЕ · ' + S.tut.step + ' / ' + tutTotal();
   el.tutOverlay.classList.toggle('tut-top', key === 'bat');
   el.tutH.textContent = tip.h;
-  el.tutText.innerHTML = tip.p;
+  // Строка про ярость хилера — только когда она включена.
+  el.tutText.innerHTML = key === 'healer' && TUNE.healRage ? tip.p.replace('</ul>', HEAL_RAGE_TIP + '</ul>') : tip.p;
   el.tutSkip.hidden = key === 'done';
   el.tutOk.textContent = key === 'done' ? 'В бой' : 'Понятно';
   if (!S.paused) { S.paused = true; S.pauseStart = performance.now(); }

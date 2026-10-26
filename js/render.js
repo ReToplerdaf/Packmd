@@ -38,11 +38,19 @@ function heroY() { return H - 56 - wedgeSize() * 0.5; }
 // активного добили, все сдвигаются на одно место ближе. Цепочка
 // асимптотически стремится к точке (farX, farY) и в угол не улетает.
 var QUEUE_STEP = 0.72;
+// Задник-картинка с берегами (render ставит в каждом кадре) — тогда
+// очередь стоит на земле вдоль левого берега русла, уходя к дальней точке.
+var BG_XF = null;
 function queuePos(i) {
   var k = i - 1;                                   // 0 — ближайшее место
   var d = (1 - Math.pow(QUEUE_STEP, k)) / (1 - QUEUE_STEP); // 0, 1, 1.72, 2.24…
   var dMax = 1 / (1 - QUEUE_STEP);                 // предел цепочки
   var f = d / dMax;
+  if (BG_XF && BG_XF.banks) {
+    var bl = BG_XF.banks.left, un = bankVisible(bl) * 0.8, near = bankPt(bl, un), far = bankPt(bl, 0.03);
+    var p = bgToScreen([near[0] + (far[0] - near[0]) * f + 30 * (1 - f), near[1] + (far[1] - near[1]) * f]);
+    return { x: p[0], y: p[1], scale: 0.84 * Math.pow(0.8, k) };
+  }
   var gy = groundY();
   var nearX = W * 0.36, nearY = gy * 0.42;
   var farX = W * 0.17, farY = gy * 0.14;
@@ -64,9 +72,24 @@ function easeMob(m, i, dt) {
   m.vy += (ty - m.vy) * a;
   m.vs += (ts - m.vs) * a;
 }
-function mobX(i) { return i === 0 ? W * 0.52 : queuePos(i).x; }
-function mobY(i) { return i === 0 ? groundY() : queuePos(i).y; }
-function mobScale(i) { return i === 0 ? 2.5 : queuePos(i).scale; }
+function mobX(i) { return BG_XF && BG_XF.path ? pathPos(i).x : (i === 0 ? W * 0.52 : queuePos(i).x); }
+function mobY(i) { return BG_XF && BG_XF.path ? pathPos(i).y : (i === 0 ? groundY() : queuePos(i).y); }
+function mobScale(i) { return i === 0 ? 2.5 : (BG_XF && BG_XF.path ? pathPos(i).scale : queuePos(i).scale); }
+// Стая на задника с линией ракурса: ноги на линии (y — по картинке),
+// задние мельче по перспективе (w — ширина моба на картинке, px).
+function pathLineX(path, y) { var a = path.line[0], b = path.line[1]; return a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]); }
+function pathPos(i) {
+  var pa = BG_XF.path, y, w;
+  if (i === 0) y = pa.front;
+  else if (i - 1 < pa.slots.length) { y = pa.slots[i - 1][0]; w = pa.slots[i - 1][1]; }
+  else {   // дальше — к дальней точке, всё мельче
+    var last = pa.slots[pa.slots.length - 1], n = i - pa.slots.length;
+    y = pa.line[0][1] + (last[0] - pa.line[0][1]) * Math.pow(0.6, n); w = last[1] * Math.pow(0.7, n);
+  }
+  var x = BG_XF.bx + pathLineX(pa, y) * BG_XF.bk, sy = BG_XF.by + y * BG_XF.bk;
+  var s0 = Math.min(1.6, Math.max(0.88, H / 178));
+  return { x: x, y: sy, scale: i === 0 ? 2.5 : w * BG_XF.bk / (43 * s0) };
+}
 
 function drawHero(x, gy, t) {
   var swing = 0, lean = 0;

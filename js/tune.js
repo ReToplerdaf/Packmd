@@ -17,7 +17,7 @@ var TUNE_DEFAULTS = { lead: 500, guard: 150, cool: 900, critRate: 0.85, shieldRa
   pace: true, pacePacks: 8, paceStep: 0.04,
   biomes: true, bossEvery: 10, biomePin: true, chief: true,
   circleRed: 700, circleCool: 900, circleSpeed: 440, circleGreen: 3000,
-  bats: true, batEvery: 15000, biomeBg: false, biomeMods: false };
+  bats: true, batEvery: 15000, healRage: true, biomeBg: false, biomeMods: false };
 var TUNE = JSON.parse(JSON.stringify(TUNE_DEFAULTS));
 
 var CRIT_MULT = 2.5;        // во сколько раз крит моба больнее обычного удара
@@ -30,6 +30,7 @@ var VULN_STEP = 0.25;       // насколько растёт урон по н�
 var VULN_CAP = 2.0;         // потолок множителя уязвимости
 var RETREAT_FRAC = 0.28;    // ниже какой доли HP моб прячется за следующего в очереди
 // Время до побега раненого моба крутится ползунком — TUNE.retreatWindow.
+var HEAL_RAGE_GAP = 0.5;    // ярость хилера: во сколько раз короче промежуток до следующего каста
 var PULSE_LEAD = 900;        // сколько идёт пульс щита/лечения от старта до момента срабатывания
 // Ширина окна удара по щиту (и окна прерывания лечения) крутится ползунком —
 // TUNE.pulseWindow (мс, целиком), делится 65/35 на «чуть раньше» и «чуть позже».

@@ -129,6 +129,7 @@ function pressStrike() {
   // Нажали не вовремя, пока идёт канал, — лечение срабатывает сразу.
   if (hl) {
     comboBreak();
+    hl.healPulse.open = true;      // промах по касту злит хилера
     resolveHeal(hl, now);
     sfx('miss');
     floatText('МИМО', '#ff9130', 0, 0, false);
