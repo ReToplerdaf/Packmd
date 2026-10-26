@@ -528,6 +528,12 @@ button.drop-verdict, .drop button.verdict {
 .tune-row.active { border-color: var(--accent-dim); background: rgba(201,149,74,.10); }
 .tune-row.active label { color: var(--ink); }
 .tune-row.active input[type="range"] { pointer-events: auto; opacity: 1; touch-action: none; }
+.layout-edit { position: absolute; inset: 0; z-index: 45; touch-action: none; display: flex; flex-direction: column; justify-content: flex-end; }
+.layout-edit[hidden] { display: none; }
+.layout-bar { background: var(--surface); border-top: 1px solid var(--line); padding: 8px 10px calc(10px + env(safe-area-inset-bottom)); }
+.layout-tip { font-size: 12px; color: var(--ink-dim); text-align: center; margin-bottom: 8px; min-height: 16px; }
+.layout-btns { display: flex; gap: 6px; }
+.layout-btns .prompt-btn { flex: 1; padding-inline: 0; min-width: 0; }
 .tune-hint { font-size: 10.5px; color: var(--ink-faint); margin: -4px 0 -6px; }
 .tune > .toggles, .tune > .tune-export, .tune > .tune-note { margin-top: 8px; }
 .tune-export { display: flex; flex-direction: column; gap: 6px; }

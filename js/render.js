@@ -67,14 +67,19 @@ function queuePos(i) {
 function easeMob(m, i, dt) {
   var tx = mobX(i), ty = mobY(i), ts = mobScale(i);
   if (m.vx == null) { m.vx = tx; m.vy = ty; m.vs = ts; return; }
-  var a = 1 - Math.exp(-dt / 140);
+  var a = LAYOUT.edit ? 1 : 1 - Math.exp(-dt / 140);   // в расстановке — без запаздывания
   m.vx += (tx - m.vx) * a;
   m.vy += (ty - m.vy) * a;
   m.vs += (ts - m.vs) * a;
 }
-function mobX(i) { return BG_XF && BG_XF.path ? pathPos(i).x : (i === 0 ? W * 0.52 : queuePos(i).x); }
-function mobY(i) { return BG_XF && BG_XF.path ? pathPos(i).y : (i === 0 ? groundY() : queuePos(i).y); }
-function mobScale(i) { return i === 0 ? 2.5 : (BG_XF && BG_XF.path ? pathPos(i).scale : queuePos(i).scale); }
+function mobX0(i) { return BG_XF && BG_XF.path ? pathPos(i).x : (i === 0 ? W * 0.52 : queuePos(i).x); }
+// Ручная расстановка (Рюкзак → Настройка → «Расставить мобов»): сдвиг и
+// масштаб каждого места стаи поверх расчётных, см. layout.
+function mobX(i) { var o = layoutOf(i); return mobX0(i) + (o ? o[0] * layoutUnit() : 0); }
+function mobY(i) { var o = layoutOf(i); return mobY0(i) + (o ? o[1] * layoutUnit() : 0); }
+function mobScale(i) { var o = layoutOf(i); return mobScale0(i) * (o ? o[2] : 1); }
+function mobY0(i) { return BG_XF && BG_XF.path ? pathPos(i).y : (i === 0 ? groundY() : queuePos(i).y); }
+function mobScale0(i) { return i === 0 ? 2.5 : (BG_XF && BG_XF.path ? pathPos(i).scale : queuePos(i).scale); }
 // Стая на задника с линией ракурса: ноги на линии (y — по картинке),
 // задние мельче по перспективе (w — ширина моба на картинке, px).
 function pathLineX(path, y) { var a = path.line[0], b = path.line[1]; return a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]); }

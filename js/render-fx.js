@@ -182,7 +182,8 @@ function drawDebug(t) {
 }
 
 // Задники биомов-картинки: ключ в CHIEF_IMG и дальняя точка (доля ширины картинки).
-var BIOME_BG_IMG = { river: ['bgRiver', 0.3, 'stalk'] };
+// третий элемент — картинка стебля на берегах ('stalk'); бамбук пока убран (автор)
+var BIOME_BG_IMG = { river: ['bgRiver', 0.3], cave: ['bgCave', 0.4], city: ['bgCity', 0.4], meteor: ['bgMeteor', 0.4] };
 // Берега русла на картинке задника (px картинки, от дальней точки к краю;
 // последние точки — за кадром): на них сажаем бамбук, по левому стоит
 // очередь стаи.
@@ -195,8 +196,10 @@ var BIOME_BANKS = {
 // Линия ракурса стаи на задника (от автора): от дальней точки к зрителю;
 // front — где ноги переднего моба, slots — очередь: [y ног, ширина моба].
 var BIOME_PATH = {
-  river: { line: [[292, 537], [505, 1020]], front: 830, slots: [[683, 70], [625, 55], [585, 38], [557, 25]] }
+  river: { line: [[292, 537], [505, 1020]], front: 830, slots: [[683, 70], [625, 55], [585, 38], [557, 25]] },
+  cave: null   // та же линия, что у русла: пол на том же месте (автор)
 };
+BIOME_PATH.cave = BIOME_PATH.city = BIOME_PATH.meteor = BIOME_PATH.river;   // пока та же линия (автор: дорогу сместим потом)
 function bankPt(line, u) {   // точка на ломаной, u 0…1 по длине
   var L = 0, i, seg = [];
   for (i = 1; i < line.length; i++) { var l = Math.hypot(line[i][0] - line[i - 1][0], line[i][1] - line[i - 1][1]); seg.push(l); L += l; }
@@ -273,7 +276,7 @@ function render(t) {
     var bx = Math.min(0, Math.max(W - bw2, bpa ? 0.5 * W - pathLineX(bpa, bpa.front) * bk : 0.47 * W - BIOME_BG_IMG[bio.id][1] * bw2));
     ctx.drawImage(bgImg, bx, bH - bgImg.height * bk, bw2, bgImg.height * bk);
     BG_XF = { bx: bx, by: bH - bgImg.height * bk, bk: bk, banks: BIOME_BANKS[bio.id] || null, path: bpa || null };
-    var stIm = CHIEF_IMG[BIOME_BG_IMG[bio.id][2]];
+    var stIm = BIOME_BG_IMG[bio.id][2] && CHIEF_IMG[BIOME_BG_IMG[bio.id][2]];
     if (stIm && BG_XF.banks) drawBgStalks(stIm, t, BG_XF.banks);
   } else if (bio !== BIOME_PLAIN && TUNE.biomeBg) drawBiomeBack(bio, gy, t);
 
@@ -326,6 +329,7 @@ function render(t) {
   drawChiefBar();
   drawBiomeBanner(t);
   if (TUNE.debug) drawDebug(t);
+  if (LAYOUT.edit) drawLayoutMarks();
 }
 
 /* ── Биомы: фон и надпись ────────────────────────────────────────── */

@@ -9,6 +9,18 @@
 
   <div class="arena-wrap">
     <canvas id="arena"></canvas>
+    <div class="layout-edit" id="layout-edit" hidden>
+      <div class="layout-bar">
+        <div class="layout-tip" id="layout-tip">Тяни моба пальцем. Размер — двумя пальцами или кнопками − и +</div>
+        <div class="layout-btns">
+          <button type="button" class="prompt-btn alt" id="layout-minus">−</button>
+          <button type="button" class="prompt-btn alt" id="layout-plus">+</button>
+          <button type="button" class="prompt-btn alt" id="layout-reset">Сброс</button>
+          <button type="button" class="prompt-btn alt" id="layout-copy">Копия</button>
+          <button type="button" class="prompt-btn" id="layout-done">Готово</button>
+        </div>
+      </div>
+    </div>
     <div class="banner" id="banner" hidden>идёт к следующей стае</div>
 
     <div class="hud-level">
@@ -78,6 +90,7 @@
         <div class="tab-body" id="pane-tune" role="tabpanel" aria-labelledby="tab-tune" hidden>
           <div class="tune">
             <button type="button" class="prompt-btn tut-start" id="tut-start">Пройти обучение</button>
+            <button type="button" class="prompt-btn tut-start" id="layout-start">Расставить мобов</button>
             <div class="keys-help" id="keys-help" hidden>
               <div class="save-h">Клавиши</div>
               <div><kbd>A</kbd> <kbd>←</kbd> защита · <kbd>D</kbd> <kbd>→</kbd> атака</div>
@@ -380,6 +393,7 @@
 <script src="js/render.js"></script>
 <script src="js/render-mob.js"></script>
 <script src="js/render-fx.js"></script>
+<script src="js/layout.js"></script>
 <script src="js/circle.js"></script>
 <script src="js/hud.js"></script>
 <script src="js/inventory.js"></script>
