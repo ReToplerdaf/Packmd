@@ -14,6 +14,7 @@ var TUNE_DEFAULTS = { lead: 500, guard: 150, cool: 900, critRate: 0.85, shieldRa
   healerRate: 0.2, yellowRate: 0.4, rangedRate: 0.32, rangedInterval: 2000, healInterval: 5000, rangedLead: 1050, yellowCounter: 300, fatigue: true, fatigueWindow: 900, packMin: 3, packMax: 5,
   autoAfter: 15000, autoBlock: 0.35,
   combo: true, perfect: 0.4,
+  pace: true, pacePacks: 8, paceStep: 0.04,
   biomes: true, bossEvery: 10, biomePin: true, chief: true,
   circleRed: 700, circleCool: 900, circleSpeed: 440, circleGreen: 3000,
   bats: true, batEvery: 15000, healRage: true, biomeBg: false, biomeMods: false };
@@ -33,14 +34,17 @@ var HEAL_RAGE_GAP = 0.5;    // ярость хилера: во сколько р
 var PULSE_LEAD = 900;        // сколько идёт пульс щита/лечения от старта до момента срабатывания
 // Ширина окна удара по щиту (и окна прерывания лечения) крутится ползунком —
 // TUNE.pulseWindow (мс, целиком), делится 65/35 на «чуть раньше» и «чуть позже».
-function pulseGoodMs() { return TUNE.pulseWindow * 0.65; }
-function pulseLateMs() { return TUNE.pulseWindow * 0.35; }
+function pulseGoodMs() { return pace(TUNE.pulseWindow) * 0.65; }
+function pulseLateMs() { return pace(TUNE.pulseWindow) * 0.35; }
 // Сила усиления моба за промах по щиту крутится ползунком — TUNE.rageStep.
 var RAGE_CAP = 3;            // потолок стаков злости
 var BOSS_FLEE_RAGE = 2;      // вожак сбегает, когда у него 3 короны (1 + 2 стака злости)
 var MEM_PACKS = 3;           // сколько стай подряд держится верхний стак памяти, прежде чем снимется
 var MEM_CAP = 3;             // память не больше 3
 var MEM_STEP = 0.15;         // каждая единица памяти режет урон героя по стае на 15%
+// Темп стаи: каждые TUNE.pacePacks чекпоинтов — ступень, на каждой тайминги
+// мобов короче на TUNE.paceStep (окно блока и откат героя не трогаются).
+var PACE_CAP = 10;           // потолок ступеней темпа
 
 var STRIKE_DEBOUNCE_MS = 200; // минимальный интервал между засчитанными нажатиями «Удар» — гасит дребезг тача
 // Ярость дальнобойщика — одна ступень: пропущенный ОБЫЧНЫЙ выстрел злит его,

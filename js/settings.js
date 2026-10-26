@@ -57,6 +57,8 @@ bindSlider('s-circlespeed','o-circlespeed','circleSpeed', function (v) { return 
 bindSlider('s-circlegreen','o-circlegreen','circleGreen', function (v) { return v + ' мс'; });
 if (CIRCLE_MODE) Array.prototype.forEach.call(document.querySelectorAll('.circle-only'), function (r) { r.hidden = false; });
 bindSlider('s-autoafter','o-autoafter','autoAfter', function (v) { return v ? (v / 1000) + ' с' : 'выкл'; });
+bindSlider('s-pacepacks','o-pacepacks','pacePacks', function (v) { return v; });
+bindSlider('s-pacestep','o-pacestep','paceStep', function (v) { return v + ' %'; }, 100);
 bindSlider('s-autoblock','o-autoblock','autoBlock', function (v) { return v + ' %'; }, 100);
 
 function bindToggle(id, key, after) {
@@ -69,6 +71,7 @@ bindToggle('c-debug', 'debug');
 bindToggle('c-adapt', 'adapt');
 bindToggle('c-fatigue', 'fatigue');
 bindToggle('c-combo', 'combo');
+bindToggle('c-pace', 'pace');
 bindToggle('c-biomes', 'biomes');
 bindToggle('c-biomepin', 'biomePin');
 bindToggle('c-bats', 'bats');

@@ -91,6 +91,13 @@ function renderInfo() {
               '<div class="verdict off">' + (e.auto ? 'авто' : 'решение') + '</div></div>';
       continue;
     }
+    if (e.kind === 'pace') {
+      html += '<div class="drop" style="--rc:' + (e.up ? 'var(--telegraph)' : 'var(--ink-dim)') + '"><div class="rail"></div>' +
+              '<div><div class="nm">' + (e.pace ? 'Темп ' + e.pace : 'Темп сброшен') + '</div>' +
+              '<div class="slot">' + (e.up ? 'мобы стали быстрее' : 'мобы стали медленнее') + '</div></div>' +
+              '<div class="verdict off">темп</div></div>';
+      continue;
+    }
     if (e.kind === 'biome') {
       var bm = BIOMES[e.biome % BIOMES.length], bl = Math.floor(e.biome / BIOMES.length);
       html += '<div class="drop" style="--rc:' + bm.icon + '"><div class="rail"></div>' +

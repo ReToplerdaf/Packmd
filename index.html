@@ -184,6 +184,14 @@
               <input type="range" id="s-packmax" min="2" max="10" step="1" value="5">
             </div>
             <div class="tune-row">
+              <label for="s-pacepacks">Стай на ступень темпа</label><output id="o-pacepacks">8</output>
+              <input type="range" id="s-pacepacks" min="2" max="30" step="1" value="8">
+            </div>
+            <div class="tune-row">
+              <label for="s-pacestep">Ускорение мобов за ступень</label><output id="o-pacestep">4 %</output>
+              <input type="range" id="s-pacestep" min="0" max="10" step="1" value="4">
+            </div>
+            <div class="tune-row">
               <label for="s-batevery">Мышь прилетает раз в</label><output id="o-batevery">15 с</output>
               <input type="range" id="s-batevery" min="5000" max="60000" step="1000" value="15000">
             </div>
@@ -221,6 +229,7 @@
               <label><input type="checkbox" id="c-adapt" checked> Адаптивная сложность</label>
               <label><input type="checkbox" id="c-fatigue" checked> Усталость от спама блока</label>
               <label><input type="checkbox" id="c-combo" checked> Серия и бонус к опыту</label>
+              <label><input type="checkbox" id="c-pace" checked> Темп растёт со стаями</label>
               <label><input type="checkbox" id="c-biomes" checked> Биомы</label>
               <label><input type="checkbox" id="c-biomepin" checked> Отступление не уводит в прошлый биом</label>
               <label><input type="checkbox" id="c-biomebg"> Фоны биомов (тяжёлые, могут тормозить)</label>

@@ -127,7 +127,7 @@ function hud(t) {
   // Строка вверху: без числа мобов в стае и без чекпоинта (он теперь
   // отдельным бейджем слева) — иначе не влезала.
   var bannerTxt = S.phase === 'fight'
-    ? ('ур ' + S.packLevel + (S.packResist ? ' · память ×' + S.packResist : ''))
+    ? ('ур ' + S.packLevel + (PACE.cur ? ' · темп ' + PACE.cur : '') + (S.packResist ? ' · память ×' + S.packResist : ''))
     : (BANNER[S.phase] || '');
   el.banner.textContent = bannerTxt;
   // Слева — уровень мобов текущей стаи (вместо номера чекпоинта).

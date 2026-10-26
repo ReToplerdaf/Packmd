@@ -6,6 +6,9 @@
 // Три новых типа рядовых мобов — только идея, но чтобы её можно было
 // пощупать, они уже роллятся здесь. Вожак всегда обычный: он должен
 // оставаться главной целью, а не превращаться в ещё один спецтип.
+// Темп текущей стаи (ступень) и прошлой — для записи в «Инфо»; вне S,
+// чтобы снимки состояния боя совпадали с версией до темпа.
+var PACE = { cur: 0, prev: -1 };
 var MAX_HEALERS = 2;           // больше двух хилеров в одной стае не бывает
 function rollMobType(noHealer) {
   // без хилера — бросаем только по «остальной» части шкалы, пропорции
@@ -23,6 +26,11 @@ function rollMobType(noHealer) {
 function spawnPack(now) {
   if (S.tut && !S.tut.spawned) { spawnTutorialPack(now); return; }
   savePackStart();                 // сохранение на переходе к новой стае
+  // Темп считается от чекпоинта, поэтому отступление снижает его само.
+  // Раньше биома: запись о новом биоме в «Инфо» должна лечь сверху.
+  PACE.cur = TUNE.pace ? Math.min(PACE_CAP, Math.floor(Math.max(0, S.progress) / Math.max(1, TUNE.pacePacks))) : 0;
+  if (PACE.prev >= 0 && PACE.cur !== PACE.prev) pushInfo({ kind: 'pace', pace: PACE.cur, up: PACE.cur > PACE.prev });
+  PACE.prev = PACE.cur;
   enterBiome(now);
   var packMin = Math.max(2, TUNE.packMin || 2), packMax = Math.max(packMin, TUNE.packMax || 4);
   var n = ri(packMin, packMax);
@@ -69,7 +77,7 @@ function spawnPack(now) {
       // хоть контры, хоть отражённого блоком выстрела.
       m.maxHp = 1; m.hp = 1;
     }
-    if (type === 'ranged') m.rangedSwingAt = now + dur(TUNE.rangedInterval * rr(0.6, 1.3));
+    if (type === 'ranged') m.rangedSwingAt = now + dur(pace(TUNE.rangedInterval) * rr(0.6, 1.3));
     if (type === 'healer') m.healSwingAt = now;   // готов сразу: первый каст — как только переднего ранят
     if (type === 'yellow') {
       // Жёлтый моб держит щит с самого начала, а не по случайному роллу —
@@ -114,9 +122,14 @@ function spawnPack(now) {
   S.pack = S.pack.concat(backline);
   if (CIRCLE_MODE) circlePack();
 
-  S.mobSwingAt = now + dur(TUNE.mobRate * 0.7);
+  S.mobSwingAt = now + dur(pace(TUNE.mobRate) * 0.7);
   S.telegraph = null;
 }
+
+// Множитель таймингов мобов от темпа стаи. В авто-режиме темп не действует:
+// там блокирует бросок autoBlock, и быстрые мобы просто чаще убивали бы.
+function paceK() { return PACE.cur && !AUTO.on ? Math.pow(1 - TUNE.paceStep, PACE.cur) : 1; }
+function pace(ms) { return ms * paceK(); }
 
 // Стая главаря: свита из обычных мобов впереди, главарь последним.
 // Сбежавший вожак ждёт следующей обычной стаи (S.bossFled не трогаем).
@@ -143,7 +156,7 @@ function spawnChiefPack(now) {
   });
   BIOME.banner = { name: 'Главарь', note: curBiome().name, start: now };
   sfx('enrage');
-  S.mobSwingAt = now + dur(TUNE.mobRate * 0.7);
+  S.mobSwingAt = now + dur(pace(TUNE.mobRate) * 0.7);
   S.telegraph = null;
 }
 

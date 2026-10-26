@@ -69,7 +69,7 @@ function tutMob(type, leader, ms) {
 function spawnTutorialPack(now) {
   S.tut.spawned = true;
   S.packLevel = S.level;
-  S.packResist = 0;                // память стаи в обучении не действует и не тратится
+  S.packResist = 0; PACE.cur = 0;                // память стаи в обучении не действует и не тратится
   var reg = function () { return mobStats(S.packLevel, false); };
   var n2 = tutMob('normal', false, reg());
   var ld = tutMob('normal', true, mobStats(S.packLevel, true));
