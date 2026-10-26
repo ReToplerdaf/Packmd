@@ -172,21 +172,55 @@ function sfx(kind, arg) {
 /* ── Фоновая музыка ──────────────────────────────────────────────────
    Трек автора «Focus Flow» (audio/focus-flow.mp3) по кругу через <audio>:
    так он играет и через file://, и одним файлом (сборка встраивает его).
+   Пока жив главарь — свой трек (audio/boss.mp3, с начала), основной
+   замолкает и потом продолжается с того же места; смена — плавная.
    Браузер даёт начать звук только после касания или клавиши — первое
    же касание где угодно включает музыку. Тумблер «Музыка» отдельный от
    «Звука» (эффекты и метроном), громкость — ползунком; на свёрнутой
    вкладке молчит. На бой не влияет. */
+var MUSIC_FADE_MS = 1200;   // за сколько трек уходит в тишину или выходит из неё
 var music = document.getElementById('music');
+var musicBoss = document.getElementById('music-boss');
 var musicArmed = false;   // было касание — браузер разрешит play()
+var musicMix = { main: 0, boss: 0, bossOn: false, at: 0 };
 
+function musicPlay(el) {
+  if (!el.paused) return;
+  var p = el.play();
+  if (p && p.catch) p.catch(function () {});
+}
+
+// Каждый кадр: какой трек должен звучать, и шаг плавного перехода.
+function musicTick() {
+  if (!music) return;
+  var now = performance.now(), dt = musicMix.at ? Math.min(100, now - musicMix.at) : 0;
+  musicMix.at = now;
+  var on = musicArmed && TUNE.music && TUNE.musicVol > 0 && !document.hidden;
+  var c = typeof chiefMob === 'function' ? chiefMob() : null;
+  var boss = !!(musicBoss && c && c.hp > 0);
+  if (boss && !musicMix.bossOn) { try { musicBoss.currentTime = 0; } catch (e) {} }
+  musicMix.bossOn = boss;
+  var step = dt / MUSIC_FADE_MS;
+  function lane(el, key, want) {
+    if (!el) return;
+    if (!on) { musicMix[key] = 0; if (!el.paused) el.pause(); return; }
+    var v = musicMix[key];
+    musicMix[key] = want ? Math.min(1, v + step) : Math.max(0, v - step);
+    if (!want && musicMix[key] === 0) { if (!el.paused) el.pause(); return; }
+    el.volume = Math.max(0, Math.min(1, TUNE.musicVol * musicMix[key]));
+    musicPlay(el);
+  }
+  lane(music, 'main', !boss);
+  lane(musicBoss, 'boss', boss);
+}
+
+// Сразу после касания или тумблера, не дожидаясь кадра (кадров может не
+// быть: заставка, свёрнутая вкладка).
 function musicUpdate() {
   if (!music) return;
-  music.volume = Math.max(0, Math.min(1, TUNE.musicVol));
-  var on = musicArmed && TUNE.music && TUNE.musicVol > 0 && !document.hidden;
-  if (on && music.paused) {
-    var p = music.play();
-    if (p && p.catch) p.catch(function () {});
-  } else if (!on && !music.paused) music.pause();
+  if (musicMix.main === 0 && musicMix.boss === 0) musicMix[musicMix.bossOn ? 'boss' : 'main'] = 1;   // из тишины — сразу
+  musicMix.at = 0;
+  musicTick();
 }
 
 ['pointerdown', 'keydown'].forEach(function (ev) {

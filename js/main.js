@@ -20,6 +20,7 @@ function frame(t) {
     step(t);
   }
   audioCues();
+  musicTick();
   render(t);
   hud(t);
   if (SAVE.dirty) saveGame();
