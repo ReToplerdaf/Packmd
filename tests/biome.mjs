@@ -85,6 +85,28 @@ const state = page => page.evaluate(() => ({
     return r;
   });
   check('фазы: 2-я со щитом, раскол → двойной удар, контра только после второго блока, 3-я злее', ph.p2 === 2 && ph.shield && ph.first && ph.noCounter && ph.second && ph.counter && ph.p3 === 3 && ph.atk === 1.25, ph);
+  // бот сам закрывает карточку — ловим её показ
+  await g.page.evaluate(() => { window.__intro = 0; var o = chiefIntro; chiefIntro = function () { o(); if (el.tutH.textContent === 'Главарь' && !el.tutOverlay.hidden) window.__intro++; }; });
+  await run(g.page, 30);
+  const intro = await g.page.evaluate(() => ({ seen: S.chiefSeen, shown: window.__intro === 1, saved: parseSave(JSON.parse(JSON.stringify(buildSave()))).chiefSeen }));
+  check('первая встреча: карточка «Главарь», отметка в сохранении', intro.seen && intro.shown && intro.saved, intro);
+  const hp = await g.page.evaluate(() => { var c = chiefMob(); return { hp: c.maxHp, want: Math.round(mobStats(c.level || S.packLevel, true).maxHp * CHIEF_HP), k: CHIEF_HP }; });
+  check('здоровье главаря ×4 от вожака', hp.k === 4, hp);
+  // Ложный замах: без подсказки, нажатая «Защита» сгорает, следом настоящий крит.
+  const fe = await g.page.evaluate(() => {
+    var c = chiefMob(), now = performance.now(), r = {};
+    S.telegraph = null;
+    var tg = null; for (var i = 0; i < 200 && !tg; i++) { var t = chiefCrit(c, now); if (t.feint) tg = t; }
+    r.found = !!tg;
+    S.telegraph = tg; r.cue = (function () { var d = []; if (S.telegraph && !S.telegraph.feint) d.push(1); return d.length; })();
+    S.guardPressedAt = tg.start + 10; S.guardUntil = 0;
+    var hp0 = S.hp; resolveCrit(tg.hitAt);
+    r.real = !!(S.telegraph && !S.telegraph.feint && S.telegraph.mob === c); r.noDmg = S.hp === hp0;
+    r.text = S.floats.some(f => f.t === 'ФИНТ · щит сгорел');
+    var feints = 0; for (var j = 0; j < 1000; j++) if (chiefCrit(c, now).feint) feints++; r.share = feints / 1000;
+    S.telegraph = null; return r;
+  });
+  check('ложный замах в 3-й фазе: ~30%, урона нет, «щит сгорел», следом настоящий крит', fe.found && fe.real && fe.noDmg && fe.text && fe.share > 0.22 && fe.share < 0.38, fe);
   await run(g.page, 30, { bot: { skill: 1 } });
   await g.page.screenshot({ path: path.join(OUT, 'chief-3.png') });
   const end = await g.page.evaluate(() => { var c = chiefMob(); S.telegraph = null; killMob(c);

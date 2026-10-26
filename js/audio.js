@@ -46,7 +46,7 @@ function cueTargets(now) {
   var want = [];
   if (S.phase !== 'fight') return want;
   var gw = dur(guardWindow());
-  if (S.telegraph) {
+  if (S.telegraph && !S.telegraph.feint) {   // на ложный замах метронома нет
     // блок засчитан, если щит поднят в hitAt; держится gw → жать в [hitAt−gw, hitAt]
     want.push({ ref: S.telegraph, kind: 'defend', start: S.telegraph.start, click: S.telegraph.hitAt - gw * 0.5 });
   }
