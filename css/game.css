@@ -696,7 +696,7 @@ button.drop-verdict, .drop button.verdict {
   text-align: center;
 }
 .splash-title {
-  font-family: var(--font-ui); font-weight: 800; font-size: 52px; letter-spacing: .18em;
+  font-family: var(--font-ui); font-weight: 800; font-size: 44px; letter-spacing: .12em;
   color: var(--accent); margin-bottom: -4px;
 }
 .splash-sub { font-size: 13px; color: var(--ink-faint); letter-spacing: .08em; margin-bottom: 18px; }
