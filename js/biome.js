@@ -82,6 +82,9 @@ var CHIEF_RAGE_ATK = 1.25;     // фаза 3: урон
 var CHIEF_RAGE_RATE = 0.8;     // фаза 3: ходы чаще
 var CHIEF_DOUBLE_GAP = 1200;   // фаза 2: между ударами двойного удара (больше отката щита)
 var CHIEF_MIN_RARITY = 2;      // гарантированная вещь — «Редкий» или выше (индекс в RARITY)
+var CHIEF_RAID_BATS = 3;       // фаза 3: мышей налёта одновременно, не больше
+var CHIEF_RAID_GAP = 500;      // разнос их прилёта, мс
+var CHIEF_RESHIELD = 1000;     // через сколько после последней сбитой мыши главарь снова в щите
 var CHIEF_FEINT = 0.3;         // фаза 3: доля критов, которые начинаются с ложного замаха
 
 function isChiefPack() {
@@ -97,6 +100,15 @@ function chiefMob() { for (var i = 0; i < S.pack.length; i++) if (S.pack[i].chie
 // Проверка фазы — каждый кадр боя, пока главарь впереди.
 function chiefTick(m, now) {
   if (!m || !m.chief || m.hp <= 0) return;
+  // Фаза 3 с налётом: налёт отбит — через секунду главарь снова в щите.
+  if (m.chiefPhase === 3 && !m.shield && CHIEF_RAID.reShieldAt && now >= CHIEF_RAID.reShieldAt && !chiefRaidActive() && !S.telegraph) {
+    CHIEF_RAID.reShieldAt = 0;
+    m.shield = true;
+    m.pulse = { start: now, hitAt: now + dur(PULSE_LEAD) };
+    S.flash = 0.4; S.flashColor = '#4a9fe8';
+    sfx('shield');
+    floatText('ЩИТ', '#4a9fe8', 0, 0, false);
+  }
   var ph = chiefPhaseFor(m);
   if (ph <= m.chiefPhase) return;
   m.chiefPhase = ph;
@@ -105,11 +117,16 @@ function chiefTick(m, now) {
   S.flash = 0.9; S.flashColor = '#ff4d34'; S.shake = 0.6;
   sfx('enrage');
   floatText('ФАЗА ' + ph, '#ff9130', 0, 0, true);
-  if (ph === 2) {                                        // фаза 2 начинается со щита
+  // Фаза 2 начинается со щита; фаза 3 (если налёт включён) — с налёта мышей
+  // и сразу щита: каждый раскол щита — новый налёт, главарь бьёт и из-за щита.
+  if (ph === 2 || (ph === 3 && chiefRaidOn())) {
     m.shield = true;
     m.pulse = { start: now + dur(CHIEF_PHASE_PAUSE) - dur(PULSE_LEAD), hitAt: now + dur(CHIEF_PHASE_PAUSE) };
   }
+  if (ph === 3 && chiefRaidOn()) chiefRaidStart(now + dur(CHIEF_PHASE_PAUSE));
 }
+// В 3-й фазе с налётом главарь бьёт и из-за щита.
+function chiefRaidPhase(m) { return !!(m && m.chief && m.chiefPhase === 3 && chiefRaidOn()); }
 
 // Крит главаря: фаза 1 — короче замах, фаза 3 — иногда ложный замах (меч
 // поднимается и раскаляется, но опускается назад; подсказки и метронома нет).
@@ -141,7 +158,7 @@ function chiefIntro() {
   el.tutText.innerHTML = 'Последняя стая каждого биома — главарь со свитой. Он не сбегает, злится как вожак, а по здоровью меняет приёмы (полоса вверху).<ul>' +
      '<li><b>Фаза 1.</b> Бьёт как обычный моб, но замах короче.</li>' +
      '<li><b>Фаза 2.</b> Встаёт в щит: раскалывайте <b>Атакой</b> в такт. После раскола — <b>двойной удар</b>, блокируйте оба. Контра — после второго.</li>' +
-     '<li><b>Фаза 3.</b> Ярость: бьёт сильнее и чаще, иногда замахивается ложно. Кнопка щита на ложный замах не светится — нажмёте, и щит сгорит.</li></ul>';
+     '<li><b>Фаза 3.</b> Ярость: зовёт <b>налёт летучих мышей</b> и сразу встаёт в щит, каждый раскол щита — новый налёт. Мышь у кнопки её глушит — сбивайте мышей касанием, когда покраснеют. Бьёт и из-за щита, сильнее и чаще, иногда замахивается ложно: кнопка щита на ложный замах не светится — нажмёте, и щит сгорит.</li></ul>';
   el.tutSkip.hidden = true;
   el.tutOk.textContent = 'В бой';
   if (!S.paused) { S.paused = true; S.pauseStart = performance.now(); }

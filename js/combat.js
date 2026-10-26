@@ -181,6 +181,7 @@ function killMob(mob) {
   // переходит на следующего моба «бесплатно», гасим его.
   if (S.counterMob === mob) { S.counterUntil = 0; S.counterMob = null; }
   S.kills++;
+  if (mob.chief) chiefRaidClear();
   if (mob.chief) { pushInfo({ kind: 'chief', biome: BIOME.pack || 0 }); markSave(); }
   grantXp(comboXp(mob.xp));        // серия даёт бонус к опыту
   dropFrom(mob);
@@ -607,7 +608,7 @@ function step(now) {
 
   if (now >= S.mobSwingAt) {
     S.mobSwingAt = now + dur(pace(TUNE.mobRate) * rr(0.85, 1.15) * chiefRateMult(mob));
-    if (mob.shield || (mob.type === 'healer' && mob.healPulse)) {
+    if ((mob.shield && !chiefRaidPhase(mob)) || (mob.type === 'healer' && mob.healPulse)) {
       // Пока щит не разбит (или канал лечения не прерван) — моб держит его
       // и не замахивается ни на крит, ни на обычный удар. Иначе получался
       // баг: щит стоит, а моб при этом ещё и телеграфит крит поверх него.

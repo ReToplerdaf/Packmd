@@ -100,6 +100,7 @@ function circleShift(d) {
   CIRCLE.stopUntil += d; CIRCLE.last += d; CIRCLE.redAt += d; CIRCLE.redUntil += d;
   CIRCLE.coolStart += d; CIRCLE.coolUntil += d;
   if (RAID.at) RAID.at += d;
+  chiefRaidShift(d);
 }
 
 /* ── Налёт летучих мышей (основная игра) ─────────────────────────── */
@@ -112,14 +113,19 @@ function circleShift(d) {
 var RAID = { at: 0 };          // когда прилетит следующая (0 — ещё не назначено)
 function raidOn() { return !CIRCLE_MODE && TUNE.bats && (!S.tut || !!S.tut.bat); }   // в обучении — только своя мышь
 function raidNext(now) { RAID.at = now + dur(TUNE.batEvery * rr(0.7, 1.3)); }
-function raidClear() { CIRCLE.mob = null; CIRCLE.red = null; CIRCLE.hop = null; RAID.at = 0; }
+function raidClear() { CIRCLE.mob = null; CIRCLE.red = null; CIRCLE.hop = null; RAID.at = 0; chiefRaidClear(); }
 // Кнопку 'guard' или 'strike' держит мышь?
 function batBlocks(which) {
-  return !CIRCLE_MODE && !!CIRCLE.mob && !CIRCLE.hop && CIRCLE.ai === (which === 'strike' ? 1 : 0);
+  var ai = which === 'strike' ? 1 : 0;
+  if (CIRCLE_MODE) return false;
+  if (CIRCLE.mob && !CIRCLE.hop && CIRCLE.ai === ai) return true;
+  for (var i = 0; i < CHIEF_RAID.bats.length; i++) { var b = CHIEF_RAID.bats[i]; if (b.mob && !b.hop && b.ai === ai) return true; }
+  return false;
 }
 // Каждый кадр боя.
 function raidTick(now) {
-  if (!raidOn()) { if (CIRCLE.mob) raidClear(); return; }
+  if (!raidOn()) { if (CIRCLE.mob || chiefRaidActive()) raidClear(); return; }
+  chiefRaidTick(now);
   if (!CIRCLE.mob) {
     if (!RAID.at) { raidNext(now); return; }
     if (now < RAID.at) return;
@@ -132,6 +138,97 @@ function raidTick(now) {
     sfx('shield');
   }
   circleTick(CIRCLE.mob, now);
+}
+
+/* ── Налёт главаря (3-я фаза) ────────────────────────────────────── */
+
+// Главарь в 3-й фазе зовёт налёт: до CHIEF_RAID_BATS мышей сразу (вместе с
+// обычной мышью налёта, если она уже здесь). Каждая — такая же мышь, как
+// обычная: бегает по дугам у кнопок, глушит кнопку, краснеет, сбивается
+// касанием. Их состояние лежит в отдельных объектах; для хода, касания и
+// отрисовки мышь на время подставляется в CIRCLE (вместе со своими
+// взмахами крыльев), так код одной мыши работает для всех.
+var CHIEF_RAID = { bats: [], queue: [], reShieldAt: 0, swapped: false };
+var CHIEF_BAT_KEYS = ['mob', 'x', 'y', 'hop', 'stopUntil', 'last', 'redAt', 'redUntil', 'red', 'coolStart', 'coolUntil', 'pace', 'u', 'v', 'tu', 'tv', 'ai', 'area'];
+function chiefRaidOn() { return raidOn() && !!TUNE.chiefRaid; }
+function chiefRaidActive() { return CHIEF_RAID.bats.length > 0 || CHIEF_RAID.queue.length > 0; }
+function chiefRaidClear() { CHIEF_RAID.bats = []; CHIEF_RAID.queue = []; CHIEF_RAID.reShieldAt = 0; }
+function chiefRaidShift(d) {
+  for (var i = 0; i < CHIEF_RAID.queue.length; i++) CHIEF_RAID.queue[i] += d;
+  for (var j = 0; j < CHIEF_RAID.bats.length; j++) {
+    var b = CHIEF_RAID.bats[j];
+    b.stopUntil += d; b.last += d; b.redAt += d; b.redUntil += d; b.coolStart += d; b.coolUntil += d;
+  }
+  if (CHIEF_RAID.reShieldAt) CHIEF_RAID.reShieldAt += d;
+}
+// Новый налёт только добирает мышей до полной: одновременно не больше CHIEF_RAID_BATS.
+function chiefRaidStart(at) {
+  var n = CHIEF_RAID_BATS - CHIEF_RAID.bats.length - CHIEF_RAID.queue.length - (CIRCLE.mob ? 1 : 0);
+  CHIEF_RAID.reShieldAt = 0;
+  if (n <= 0) return;
+  var t0 = CHIEF_RAID.queue.length ? CHIEF_RAID.queue[CHIEF_RAID.queue.length - 1] + dur(CHIEF_RAID_GAP) : at;
+  for (var i = 0; i < n; i++) CHIEF_RAID.queue.push(t0 + dur(CHIEF_RAID_GAP * i));
+  floatText('НАЛЁТ', '#ff9130', 0, 0, true);
+}
+// Подставить мышь b в CIRCLE (и обратно — тем же вызовом).
+function chiefBatSwap(b) {
+  for (var i = 0; i < CHIEF_BAT_KEYS.length; i++) { var k = CHIEF_BAT_KEYS[i], v = CIRCLE[k]; CIRCLE[k] = b[k]; b[k] = v; }
+  var f = BAT_FLAP; BAT_FLAP = b.flap; b.flap = f;
+  var tl = BAT_TILT; BAT_TILT = b.tilt; b.tilt = tl;
+}
+function withChiefBat(b, fn) {
+  chiefBatSwap(b); CHIEF_RAID.swapped = true;
+  try { return fn(); } finally { CHIEF_RAID.swapped = false; chiefBatSwap(b); }
+}
+function chiefBatNew(now) {
+  var b = { flap: { ph: 0, t: 0, fly: false, flyAt: -1e9, landAt: -1e9, e: 0 }, tilt: { a: 0 }, area: CIRCLE.areas[0] };
+  for (var i = 0; i < CHIEF_BAT_KEYS.length; i++) if (!(CHIEF_BAT_KEYS[i] in b)) b[CHIEF_BAT_KEYS[i]] = 0;
+  b.mob = null; b.hop = null; b.red = null;
+  withChiefBat(b, function () {
+    // прилетает сверху в случайную дугу — как обычная мышь налёта
+    circleReset({ bat: true, chiefRaid: true }, now);
+    var target = CIRCLE.ai;
+    CIRCLE.ai = 1 - target; CIRCLE.area = CIRCLE.areas[CIRCLE.ai];
+    CIRCLE.hop = { fx: W * rr(0.3, 0.7), fy: -40, p: 0.001 };
+    CIRCLE.x = CIRCLE.hop.fx; CIRCLE.y = CIRCLE.hop.fy;
+  });
+  CHIEF_RAID.bats.push(b);
+  sfx('shield');
+}
+function chiefRaidTick(now) {
+  if (!chiefRaidActive()) return;
+  while (CHIEF_RAID.queue.length && now >= CHIEF_RAID.queue[0]) { CHIEF_RAID.queue.shift(); chiefBatNew(now); }
+  for (var i = 0; i < CHIEF_RAID.bats.length; i++) {
+    var b = CHIEF_RAID.bats[i];
+    withChiefBat(b, function () { circleTick(CIRCLE.mob, now); });
+    if (S.phase !== 'fight') return;
+  }
+  chiefRaidSweep(now);
+}
+// Сбитые мыши улетают; налёт отбит — главарь скоро снова в щите.
+function chiefRaidSweep(now) {
+  var had = CHIEF_RAID.bats.length;
+  CHIEF_RAID.bats = CHIEF_RAID.bats.filter(function (b) { return !!b.mob; });
+  if (had && !chiefRaidActive()) CHIEF_RAID.reShieldAt = now + dur(CHIEF_RESHIELD);
+}
+function chiefBatTap(b, x, y) {
+  withChiefBat(b, function () { circleTap(x, y); });
+  chiefRaidSweep(performance.now());
+}
+// Клавиша касания (десктоп): сначала по красной мыши, потом по обычной.
+function batKeyTap() {
+  if (!(CIRCLE.mob && CIRCLE.red)) {
+    for (var i = 0; i < CHIEF_RAID.bats.length; i++) {
+      var b = CHIEF_RAID.bats[i];
+      if (b.mob && b.red) { chiefBatTap(b, b.x, b.y); return; }
+    }
+    if (!CIRCLE.mob && CHIEF_RAID.bats.length) { var f = CHIEF_RAID.bats[0]; chiefBatTap(f, f.x, f.y); return; }
+  }
+  circleTap(CIRCLE.x, CIRCLE.y);
+}
+function drawChiefRaid(t) {
+  if (S.phase !== 'fight' && S.phase !== 'dead') return;
+  for (var i = 0; i < CHIEF_RAID.bats.length; i++) withChiefBat(CHIEF_RAID.bats[i], function () { drawCircle(t); });
 }
 
 /* ── Ход кружка (каждый кадр боя) ────────────────────────────────── */
@@ -221,7 +318,7 @@ function circleKill(now, manual) {
   S.flash = 0.6; S.flashColor = '#3fdcc4';
   sfx('block');
   CIRCLE.red = null; CIRCLE.mob = null;
-  if (!CIRCLE_MODE) { CIRCLE.hop = null; raidNext(now); return; }   // мышь налёта: кнопка свободна
+  if (!CIRCLE_MODE) { CIRCLE.hop = null; if (!CHIEF_RAID.swapped) raidNext(now); return; }   // мышь налёта: кнопка свободна
   mob.hp = 0; mob.hurt = performance.now();
   killMob(mob);
 }
@@ -246,11 +343,17 @@ function canvasXY(e) { var r = cv.getBoundingClientRect(); return { x: e.clientX
 // (фаза перехвата на window), остальные касания идут как обычно.
 if (!CIRCLE_MODE) {
   window.addEventListener('pointerdown', function (e) {
-    if (!CIRCLE.mob || S.paused || S.phase !== 'fight') return;
-    var p = canvasXY(e);
-    if (Math.hypot(p.x - CIRCLE.x, p.y - CIRCLE.y) > CIRCLE_HIT_R) return;
+    if ((!CIRCLE.mob && !CHIEF_RAID.bats.length) || S.paused || S.phase !== 'fight') return;
+    var p = canvasXY(e), best = null, bd = CIRCLE_HIT_R;
+    if (CIRCLE.mob && Math.hypot(p.x - CIRCLE.x, p.y - CIRCLE.y) <= bd) { best = 'main'; bd = Math.hypot(p.x - CIRCLE.x, p.y - CIRCLE.y); }
+    for (var i = 0; i < CHIEF_RAID.bats.length; i++) {
+      var b = CHIEF_RAID.bats[i], d = Math.hypot(p.x - b.x, p.y - b.y);
+      if (b.mob && d <= bd) { best = b; bd = d; }
+    }
+    if (!best) return;
     e.preventDefault(); e.stopPropagation();
-    circleTap(p.x, p.y);
+    if (best === 'main') circleTap(p.x, p.y);
+    else chiefBatTap(best, p.x, p.y);
   }, true);
 }
 
