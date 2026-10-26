@@ -463,6 +463,12 @@ function drawMob(m, x, gy, t, isFront) {
         hx = topHx; hy = topHy; ang = topAng;
         bladeColor = '#ff2a1a'; swordGlow = '#ff2a1a';
         shake = 1.25;                                            // в верхней точке — сильнее всего
+      } else if (tg.feint) {
+        // Ложный замах: вместо удара меч опускается обратно в покой и остывает.
+        e = (tp - CRIT_DROP) / (1 - CRIT_DROP); e = 1 - (1 - e) * (1 - e);
+        hx = topHx + (idleHx - topHx) * e;
+        hy = topHy + (idleHy - topHy) * e;
+        ang = topAng + (idleAng - topAng) * e;
       } else {
         e = (tp - CRIT_DROP) / (1 - CRIT_DROP); e = e * e;       // ease-in
         bladeColor = '#ff2a1a'; swordGlow = '#ff2a1a';           // удар вниз — тоже красный
@@ -481,7 +487,7 @@ function drawMob(m, x, gy, t, isFront) {
     }
     if (rig) {
       // поза та же, только отражённая: меч у главаря в левой стороне экрана
-      chiefPose = { hx: -hx, hy: hy, ang: Math.PI - ang, red: tg ? (tp < 0.55 ? (tp / 0.55) * (tp / 0.55) : 1) : 0 };
+      chiefPose = { hx: -hx, hy: hy, ang: Math.PI - ang, red: tg ? (tp < 0.55 ? (tp / 0.55) * (tp / 0.55) : (tg.feint && tp >= 0.88 ? 1 - (tp - 0.88) / 0.12 : 1)) : 0 };
     } else {
       if (chiefRigReady()) {
         // меч с картинки на замахе не поворачивается: просто поднимается

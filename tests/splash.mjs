@@ -56,7 +56,7 @@ s = await st();
 check('«Старт» начинает бой', !s.splash && s.started);
 check('музыка играет', s.playing);
 const mus = () => page.evaluate(() => ({ main: !$('music').paused, boss: !$('music-boss').paused, t: $('music').currentTime }));
-await page.evaluate(() => { const m = S.pack.find(x => x.hp > 0); m.chief = true; });
+await page.evaluate(() => { S.chiefSeen = true; const m = S.pack.find(x => x.hp > 0); m.chief = true; });   // без карточки первой встречи
 await page.waitForTimeout(2000);
 let m = await mus();
 check('главарь жив — играет его трек, основной замолк', m.boss && !m.main);

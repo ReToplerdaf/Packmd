@@ -334,6 +334,7 @@ function resolveCrit(now) {
   var tg = S.telegraph, mob = tg.mob;
   S.telegraph = null;
   if (!mob || mob.hp <= 0) return;
+  if (tg.feint) { chiefFeintEnd(tg, now); return; }
 
   S.tm.crits++;
 
@@ -559,6 +560,7 @@ function step(now) {
   var mob = front();
   if (!mob) { S.phase = 'walk'; S.phaseUntil = now + dur(900); return; }
   if (mob.chief) chiefTick(mob, now);
+  if (chiefIntroDue(mob) && !CIRCLE_MODE) { chiefIntro(); return; }
   if (CIRCLE_MODE) { circleTick(mob, now); return; }   // «кружок»: ни авто-атаки, ни ходов моба
   raidTick(now);                                         // налёт летучих мышей
 
@@ -631,7 +633,7 @@ function step(now) {
       sfx('shield');
       floatText('ЩИТ', '#4a9fe8', 0, 0, false);
     } else if (rnd() < TUNE.critRate) {
-      S.telegraph = { start: now, hitAt: now + dur(pace(biomeLead()) * chiefLeadMult(mob)), mob: mob };
+      S.telegraph = mob.chief ? chiefCrit(mob, now) : { start: now, hitAt: now + dur(pace(biomeLead()) * chiefLeadMult(mob)), mob: mob };
       sfx('telegraph');
     } else {
       mobNormalHit(now, mob);
