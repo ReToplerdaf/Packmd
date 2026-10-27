@@ -1,7 +1,7 @@
 // Стартовая заставка и музыка: бой ждёт «Старта», звук и музыка включаются
 // отдельно (и попадают в «Настройку»), сброс прогресса — только после
 // подтверждения, пока заставка на экране, сохранение не затирается; пока
-// жив главарь — его трек вместо основного.
+// главарь впереди — его трек вместо основного.
 //   node tests/splash.mjs [--shot файл.png]
 import http from 'node:http';
 import fs from 'node:fs';
@@ -56,10 +56,14 @@ s = await st();
 check('«Старт» начинает бой', !s.splash && s.started);
 check('музыка играет', s.playing);
 const mus = () => page.evaluate(() => ({ main: !$('music').paused, boss: !$('music-boss').paused, t: $('music').currentTime }));
-await page.evaluate(() => { S.chiefSeen = true; const m = S.pack.find(x => x.hp > 0); m.chief = true; });   // без карточки первой встречи
+await page.evaluate(() => { S.chiefSeen = true; S.pack[S.pack.length - 1].chief = true; });   // без карточки первой встречи
 await page.waitForTimeout(2000);
 let m = await mus();
-check('главарь жив — играет его трек, основной замолк', m.boss && !m.main);
+check('главарь в стае, но впереди свита — основной трек', m.main && !m.boss);
+await page.evaluate(() => { S.pack.forEach(x => { x.chief = false; }); S.pack[0].chief = true; });
+await page.waitForTimeout(2000);
+m = await mus();
+check('главарь впереди — играет его трек, основной замолк', m.boss && !m.main);
 const tMain = m.t;
 await page.evaluate(() => { S.pack.forEach(x => { x.chief = false; }); });
 await page.waitForTimeout(2000);
