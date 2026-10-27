@@ -119,6 +119,8 @@ function chiefTick(m, now) {
   floatText('ФАЗА ' + ph, '#ff9130', 0, 0, true);
   // Фаза 2 начинается со щита; фаза 3 (если налёт включён) — с налёта мышей
   // и сразу щита: каждый раскол щита — новый налёт, главарь бьёт и из-за щита.
+  // Щит 2-й фазы в 3-ю не переходит: без налёта главарь в 3-й фазе без щита.
+  if (ph === 3) { m.shield = false; m.pulse = null; }
   if (ph === 2 || (ph === 3 && chiefRaidOn())) {
     m.shield = true;
     m.pulse = { start: now + dur(CHIEF_PHASE_PAUSE) - dur(PULSE_LEAD), hitAt: now + dur(CHIEF_PHASE_PAUSE) };
