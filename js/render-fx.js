@@ -310,6 +310,7 @@ function render(t) {
   }
   ctx.restore();
   drawCircle(t);                       // «кружок» или мышь налёта
+  drawChiefRaid(t);                    // мыши налёта главаря
   drawRangedShots(gy, t);
   drawDeflects(t);
 

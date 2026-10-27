@@ -75,6 +75,6 @@ window.addEventListener('keydown', function (e) {
   if (k === ' ' || k === 'w' || k === 'ArrowUp') {
     done();
     unlockAudio();
-    circleTap(CIRCLE.x, CIRCLE.y);
+    batKeyTap();
   }
 });

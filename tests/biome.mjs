@@ -116,6 +116,70 @@ const state = page => page.evaluate(() => ({
   await g.close();
 }
 
+// Главарь, 3-я фаза: налёт мышей и сразу щит, раскол щита — новый налёт (не больше трёх мышей),
+// налёт отбит — снова щит, бьёт и из-за щита. С выключенным налётом — как раньше.
+{
+  const g = await openGame(browser, file, { seed: 7 });
+  await run(g.page, 200, { bot: { skill: 1 } });
+  await toPack(g.page, 9);
+  await g.page.evaluate(() => { S.chiefSeen = true; S.hp = 1e6; var c = chiefMob(); S.pack = [c]; S.telegraph = null; c.chiefPhase = 2; c.shield = false; c.hp = c.maxHp * 0.2; });
+  await run(g.page, 2);
+  const r0 = await g.page.evaluate(() => { var c = chiefMob(); return { ph: c.chiefPhase, shield: c.shield, queued: CHIEF_RAID.queue.length + CHIEF_RAID.bats.length + (CIRCLE.mob ? 1 : 0) }; });
+  check('3-я фаза начинается с налёта трёх мышей и сразу щита', r0.ph === 3 && r0.shield && r0.queued === 3, r0);
+  await run(g.page, 240);
+  const r1 = await g.page.evaluate(() => {
+    var c = chiefMob(), r = { bats: CHIEF_RAID.bats.length + (CIRCLE.mob ? 1 : 0) };
+    var b = CHIEF_RAID.bats[0]; r.blocks = !b.hop ? batBlocks(b.ai ? 'strike' : 'guard') : true;
+    c.shield = true; breakShield(c, performance.now()); r.afterBreak = CHIEF_RAID.bats.length + CHIEF_RAID.queue.length + (CIRCLE.mob ? 1 : 0);
+    r.noStrike = !S.telegraph || !S.telegraph.first;
+    return r;
+  });
+  check('мыши прилетели, мышь глушит кнопку, раскол щита без удара и не больше трёх мышей', r1.bats === 3 && r1.blocks && r1.afterBreak === 3 && r1.noStrike, r1);
+  // Сбить всех мышей: касание по красной.
+  const r2 = await g.page.evaluate(() => {
+    var now = performance.now();
+    CIRCLE.mob = null; RAID.at = now + 1e9;
+    CHIEF_RAID.bats.forEach(b => { b.red = { start: now }; b.redUntil = now + 1000; b.coolUntil = 0; });
+    CHIEF_RAID.bats.slice().forEach(b => chiefBatTap(b, b.x, b.y));
+    return { left: CHIEF_RAID.bats.length, reShield: CHIEF_RAID.reShieldAt > now };
+  });
+  check('мыши сбиваются касанием, налёт отбит — назначен щит', r2.left === 0 && r2.reShield, r2);
+  await run(g.page, 150);
+  const r3 = await g.page.evaluate(() => { var c = chiefMob(); return { shield: c.shield }; });
+  check('через секунду главарь снова в щите', r3.shield, r3);
+  let swung = false;
+  for (let i = 0; i < 40 && !swung; i++) { await run(g.page, 30); swung = await g.page.evaluate(() => !!(S.telegraph && chiefMob() && chiefMob().shield)); }
+  check('в 3-й фазе главарь замахивается и из-за щита', swung);
+  check('нет ошибок в консоли (налёт главаря)', g.errors.length === 0, g.errors);
+  await g.close();
+}
+// Оглушённый и уязвимый главарь щит не поднимает.
+{
+  const g = await openGame(browser, file, { seed: 7 });
+  await run(g.page, 200, { bot: { skill: 1 } });
+  await toPack(g.page, 9);
+  const r = await g.page.evaluate(() => {
+    S.chiefSeen = true; S.hp = 1e6; var c = chiefMob(); S.pack = [c]; S.telegraph = null; var now = performance.now(), r = {};
+    c.staggerUntil = now + 500; c.hp = c.maxHp * 0.6; chiefTick(c, now);
+    r.p2 = c.chiefPhase; r.noShield2 = !c.shield; r.next2 = c.noShieldNext;
+    c.noShieldNext = false; c.staggerUntil = now - 1; S.mobSwingAt = now + 1e6;
+    return r;
+  });
+  await run(g.page, 3);
+  const r2 = await g.page.evaluate(() => { var c = chiefMob(); return { next: c.noShieldNext, stag: c.staggerUntil, vuln: c.vulnMult > 1 }; });
+  check('оглушённый главарь: 2-я фаза без щита, после оглушения следующий ход без щита', r.p2 === 2 && r.noShield2 && r.next2 && r2.next && r2.stag === 0 && r2.vuln, { r, r2 });
+  await g.close();
+}
+{
+  const g = await openGame(browser, file, { seed: 7, tune: { chiefRaid: false } });
+  await run(g.page, 200, { bot: { skill: 1 } });
+  await toPack(g.page, 9);
+  const r = await g.page.evaluate(() => { S.chiefSeen = true; var c = chiefMob(); S.pack = [c]; S.telegraph = null; c.chiefPhase = 2; c.shield = false; c.hp = c.maxHp * 0.2;
+    chiefTick(c, performance.now()); return { ph: c.chiefPhase, shield: c.shield, raid: chiefRaidActive() }; });
+  check('налёт главаря выключен: 3-я фаза без щита и мышей', r.ph === 3 && !r.shield && !r.raid, r);
+  await g.close();
+}
+
 // По умолчанию модификаторы биомов выключены: Пещера и Пустыня — как Высохшее русло, только цвет фона другой.
 {
   const g = await openGame(browser, file, { seed: 5 });

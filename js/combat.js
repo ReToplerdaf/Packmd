@@ -181,6 +181,7 @@ function killMob(mob) {
   // переходит на следующего моба «бесплатно», гасим его.
   if (S.counterMob === mob) { S.counterUntil = 0; S.counterMob = null; }
   S.kills++;
+  if (mob.chief) chiefRaidClear();
   if (mob.chief) { pushInfo({ kind: 'chief', biome: BIOME.pack || 0 }); markSave(); }
   grantXp(comboXp(mob.xp));        // серия даёт бонус к опыту
   dropFrom(mob);
@@ -602,12 +603,13 @@ function step(now) {
   if (mob.staggerUntil !== 0 && mob.hp > 0) {
     mob.staggerUntil = 0;
     if (TUNE.adapt) markVulnerable(mob);
+    if (mob.chief) { mob.noShieldNext = true; mob.stunNoShield = true; }   // главарь после оглушения следующим ходом щит не поднимает
     return;
   }
 
   if (now >= S.mobSwingAt) {
     S.mobSwingAt = now + dur(pace(TUNE.mobRate) * rr(0.85, 1.15) * chiefRateMult(mob));
-    if (mob.shield || (mob.type === 'healer' && mob.healPulse)) {
+    if ((mob.shield && !chiefRaidPhase(mob)) || (mob.type === 'healer' && mob.healPulse)) {
       // Пока щит не разбит (или канал лечения не прерван) — моб держит его
       // и не замахивается ни на крит, ни на обычный удар. Иначе получался
       // баг: щит стоит, а моб при этом ещё и телеграфит крит поверх него.
@@ -623,7 +625,7 @@ function step(now) {
       return;
     }
     var canShield = !mob.noShieldNext;
-    mob.noShieldNext = false;
+    mob.noShieldNext = false; if (mob.stunNoShield) mob.stunNoShield = false;
     // Красный (обычный) моб сам в блок не встаёт — только когда прикрывает
     // раненого (см. retreatBehindProtector). Случайный щит — лишь у жёлтого.
     if (TUNE.adapt && canShield && (mob.type === 'yellow' || mob.chiefPhase === 2) && rnd() < TUNE.shieldRate) {

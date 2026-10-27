@@ -55,7 +55,9 @@ function breakShield(mob, now) {
   // Даём полную паузу и запрещаем блок на ближайшем ходу.
   S.mobSwingAt = Math.max(S.mobSwingAt, now + dur(pace(TUNE.mobRate)));
   mob.noShieldNext = true;
-  if (mob.chief && mob.hp > 0) {
+  if (mob.hp > 0 && chiefRaidPhase(mob)) {
+    chiefRaidStart(now);        // главарь в 3-й фазе: раскол щита — налёт мышей, без удара
+  } else if (mob.chief && mob.hp > 0) {
     // Главарь во 2-й фазе: после раскола щита — двойной удар (см. resolveCrit).
     S.telegraph = { start: now, hitAt: now + dur(pace(TUNE.yellowCounter)), mob: mob, yellowFollow: true, first: true };
     sfx('telegraph');
