@@ -101,7 +101,7 @@ function chiefMob() { for (var i = 0; i < S.pack.length; i++) if (S.pack[i].chie
 function chiefTick(m, now) {
   if (!m || !m.chief || m.hp <= 0) return;
   // Фаза 3 с налётом: налёт отбит — через секунду главарь снова в щите.
-  if (m.chiefPhase === 3 && !m.shield && CHIEF_RAID.reShieldAt && now >= CHIEF_RAID.reShieldAt && !chiefRaidActive() && !S.telegraph) {
+  if (m.chiefPhase === 3 && !m.shield && CHIEF_RAID.reShieldAt && now >= CHIEF_RAID.reShieldAt && !chiefRaidActive() && !S.telegraph && !(m.staggerUntil > now) && !m.stunNoShield) {
     CHIEF_RAID.reShieldAt = 0;
     m.shield = true;
     m.pulse = { start: now, hitAt: now + dur(PULSE_LEAD) };
@@ -121,7 +121,11 @@ function chiefTick(m, now) {
   // и сразу щита: каждый раскол щита — новый налёт, главарь бьёт и из-за щита.
   // Щит 2-й фазы в 3-ю не переходит: без налёта главарь в 3-й фазе без щита.
   if (ph === 3) { m.shield = false; m.pulse = null; }
-  if (ph === 2 || (ph === 3 && chiefRaidOn())) {
+  // Оглушённый главарь щит не поднимает: фаза начнётся без щита, и следующий
+  // ход тоже без щита (в 3-й фазе щит вернётся после налёта).
+  var stunned = m.staggerUntil > now;
+  if (stunned) { m.noShieldNext = true; m.stunNoShield = true; }
+  if (!stunned && (ph === 2 || (ph === 3 && chiefRaidOn()))) {
     m.shield = true;
     m.pulse = { start: now + dur(CHIEF_PHASE_PAUSE) - dur(PULSE_LEAD), hitAt: now + dur(CHIEF_PHASE_PAUSE) };
   }

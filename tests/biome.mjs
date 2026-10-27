@@ -153,6 +153,23 @@ const state = page => page.evaluate(() => ({
   check('нет ошибок в консоли (налёт главаря)', g.errors.length === 0, g.errors);
   await g.close();
 }
+// Оглушённый и уязвимый главарь щит не поднимает.
+{
+  const g = await openGame(browser, file, { seed: 7 });
+  await run(g.page, 200, { bot: { skill: 1 } });
+  await toPack(g.page, 9);
+  const r = await g.page.evaluate(() => {
+    S.chiefSeen = true; S.hp = 1e6; var c = chiefMob(); S.pack = [c]; S.telegraph = null; var now = performance.now(), r = {};
+    c.staggerUntil = now + 500; c.hp = c.maxHp * 0.6; chiefTick(c, now);
+    r.p2 = c.chiefPhase; r.noShield2 = !c.shield; r.next2 = c.noShieldNext;
+    c.noShieldNext = false; c.staggerUntil = now - 1; S.mobSwingAt = now + 1e6;
+    return r;
+  });
+  await run(g.page, 3);
+  const r2 = await g.page.evaluate(() => { var c = chiefMob(); return { next: c.noShieldNext, stag: c.staggerUntil, vuln: c.vulnMult > 1 }; });
+  check('оглушённый главарь: 2-я фаза без щита, после оглушения следующий ход без щита', r.p2 === 2 && r.noShield2 && r.next2 && r2.next && r2.stag === 0 && r2.vuln, { r, r2 });
+  await g.close();
+}
 {
   const g = await openGame(browser, file, { seed: 7, tune: { chiefRaid: false } });
   await run(g.page, 200, { bot: { skill: 1 } });
