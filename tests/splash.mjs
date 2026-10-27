@@ -42,7 +42,11 @@ let s = await st();
 check('заставка на экране, бой не начат', s.splash && !s.started);
 check('без сохранения сброса нет', !s.reset);
 if (shot) await page.screenshot({ path: shot });
+check('музыка по умолчанию выключена', !s.music && !s.cm && s.sound);
 
+await page.click('#splash-music');   // включить
+s = await st();
+check('музыка включается', s.music && s.cm);
 await page.click('#splash-music');
 s = await st();
 check('музыка выключается отдельно от звука', !s.music && s.sound && !s.cm && s.cs);

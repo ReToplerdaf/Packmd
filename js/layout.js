@@ -4,15 +4,22 @@
 "use strict";
 
 var LAYOUT_KEY = 'arena.layout', LAYOUT_SLOTS = 5;
+// Расстановка автора — по умолчанию во всех биомах; «Сброс» возвращает к ней.
+var LAYOUT_DEFAULT = [[3, -74, 0.89], [279, -35, 1], [338, 5, 1], [384, 13, 1], [414, 24, 1]];
+function layoutDefault() { return LAYOUT_DEFAULT.map(function (o) { return o.slice(); }); }
 var LAYOUT = { mobs: loadLayout(), edit: false, sel: -1, ptrs: {}, drag: null };
 function loadLayout() {
   try {
     var v = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null');
-    return Array.isArray(v) ? v.slice(0, LAYOUT_SLOTS) : [];
-  } catch (e) { return []; }
+    if (Array.isArray(v) && v.some(function (o) { return o; })) return v.slice(0, LAYOUT_SLOTS);
+  } catch (e) {}
+  return layoutDefault();
 }
 function saveLayout() { try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(LAYOUT.mobs)); } catch (e) {} }
+// Только на задниках с линией стаи: без картинки (обучение, «кружок») —
+// прежние места.
 function layoutOf(i) {
+  if (!BG_XF || !BG_XF.path) return null;
   var o = i < LAYOUT_SLOTS ? LAYOUT.mobs[i] : null;
   return o && isFinite(o[0]) && isFinite(o[1]) && o[2] > 0 ? o : null;
 }
@@ -133,8 +140,8 @@ document.getElementById('layout-done').addEventListener('click', layoutDone);
 document.getElementById('layout-minus').addEventListener('click', function () { layoutScale(1 / 1.06); });
 document.getElementById('layout-plus').addEventListener('click', function () { layoutScale(1.06); });
 document.getElementById('layout-reset').addEventListener('click', function () {
-  if (LAYOUT.sel >= 0) { LAYOUT.mobs[LAYOUT.sel] = null; layoutSay('Моб ' + (LAYOUT.sel + 1) + ' — на прежнем месте'); }
-  else { LAYOUT.mobs = []; layoutSay('Все мобы — на прежних местах'); }
+  if (LAYOUT.sel >= 0) { LAYOUT.mobs[LAYOUT.sel] = LAYOUT_DEFAULT[LAYOUT.sel] ? LAYOUT_DEFAULT[LAYOUT.sel].slice() : null; layoutSay('Моб ' + (LAYOUT.sel + 1) + ' — на месте по умолчанию'); }
+  else { LAYOUT.mobs = layoutDefault(); layoutSay('Все мобы — на местах по умолчанию'); }
 });
 document.getElementById('layout-copy').addEventListener('click', function () {
   var txt = 'LAYOUT1:' + JSON.stringify(LAYOUT.mobs.map(function (o) {
