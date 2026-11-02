@@ -513,6 +513,7 @@ function step(now) {
         rm.rangedSwingAt = now + dur(pace(TUNE.rangedInterval) * rr(0.8, 1.2));
         sfx('telegraph');
         if (rm.tutKey) tutShow(rm.tutKey);
+        else if (mobIntroDue('ranged')) mobIntro('ranged');
       }
       if (rm.rangedTelegraph && now >= rm.rangedTelegraph.hitAt) {
         resolveRanged(rm, now);
@@ -547,6 +548,7 @@ function step(now) {
           sfx('shield');
           floatText('ЛЕЧИТ', '#7cd88a', 0, 0, false);
           if (hm.tutKey) tutShow(hm.tutKey);
+          else if (mobIntroDue('healer')) mobIntro('healer');
         }
       }
       // Каст можно было прервать: его окно, «Атака» ушла бы в него (он первый,
@@ -562,6 +564,7 @@ function step(now) {
   if (!mob) { S.phase = 'walk'; S.phaseUntil = now + dur(900); return; }
   if (mob.chief) chiefTick(mob, now);
   if (chiefIntroDue(mob) && !CIRCLE_MODE) { chiefIntro(); return; }
+  if (mob.type === 'yellow' && mobIntroDue('yellow')) { mobIntro('yellow'); return; }   // щитовик впервые вышел вперёд
   if (CIRCLE_MODE) { circleTick(mob, now); return; }   // «кружок»: ни авто-атаки, ни ходов моба
   raidTick(now);                                         // налёт летучих мышей
 

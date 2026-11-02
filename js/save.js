@@ -23,6 +23,7 @@ var SAVE = {
 var MIGRATIONS = {};
 
 function markSave() { SAVE.dirty = true; }
+function unlockSeenList() { return Object.keys(UNLOCK.seen).filter(function (t) { return UNLOCK.seen[t]; }); }
 
 // Сохранение пишется на переходе к новой стае. Пока стая не зачищена
 // (и герой не пал), в хранилище лежит снимок с её начала: закрыли вкладку
@@ -69,7 +70,7 @@ function buildSave() {
     gear: gear,
     bag: bag,
     pack: { progress: S.progress, resist: S.resist, memLeft: S.memLeft, bossFled: S.bossFled, deathStreak: S.deathStreak,
-            chiefSeen: S.chiefSeen },
+            chiefSeen: S.chiefSeen, mobSeen: unlockSeenList() },
     combo: { best: COMBO.bestEver },
     info: info
   };
@@ -88,6 +89,7 @@ function saveData() {
     d.pack.bossFled = d.pack.bossFled || S.bossFled;
   }
   d.pack.chiefSeen = S.chiefSeen;      // карточку главаря второй раз не показываем
+  d.pack.mobSeen = unlockSeenList();   // и карточки новых врагов
   return d;
 }
 
@@ -202,6 +204,8 @@ function parseSave(d) {
     memLeft: resist ? int(p.memLeft, 0, MEM_PACKS, 0) : 0,
     bossFled: !!p.bossFled,
     chiefSeen: !!p.chiefSeen,
+    // Сохранения до открытия мобов по главам: игрок прошёл обучение со всеми мобами.
+    mobSeen: Array.isArray(p.mobSeen) ? p.mobSeen.filter(function (t) { return !!UNLOCK_NAMES[t]; }) : Object.keys(UNLOCK_NAMES),
     deathStreak: int(p.deathStreak, 0, 1000, 0),
     comboBest: int(d.combo && d.combo.best, 0, 1e6, 0)
   };
@@ -212,6 +216,7 @@ function applySave(v) {
   S.gear = v.gear; S.log = v.log; S.info = v.info;
   S.progress = v.progress; S.resist = v.resist; S.memLeft = v.memLeft;
   S.bossFled = v.bossFled; S.deathStreak = v.deathStreak; S.chiefSeen = v.chiefSeen;
+  UNLOCK.seen = {}; v.mobSeen.forEach(function (t) { UNLOCK.seen[t] = true; });
   COMBO.bestEver = v.comboBest;
   recalc();
   S.hp = v.hp >= 1 ? Math.min(v.hp, S.stats.maxHp) : S.stats.maxHp;

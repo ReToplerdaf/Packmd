@@ -11,10 +11,14 @@
 var BIOMES = [
 // flat — простой фон цветом (сверху, снизу), когда фоны биомов выключены (по умолчанию).
   { id: 'river',  name: 'Высохшее русло',  bg: ['#86bfe0', '#d6ecf3'], flat: ['#4f6260', '#6e5c44'], icon: '#4fa3c7' },
-  { id: 'cave',   name: 'Пещера',          bg: ['#05060a', '#0c0e15'], flat: ['#0a0b0e', '#050506'], icon: '#5aa6e8', lead: 0.9, note: 'замах крита короче' },
-  { id: 'city',   name: 'Пустынный город', bg: ['#7fb6de', '#f2dcaa'], flat: ['#8a3b22', '#c98a3a'], icon: '#d8a84e', healer: 0.10, note: 'хилеров больше' },
-  { id: 'meteor', name: 'Метеорит',        bg: ['#080818', '#1c0e1a'], flat: ['#5e5b57', '#9a8b6e'], icon: '#e8643c', leaderRage: 1, note: 'вожак сразу зол' }
+  { id: 'cave',   name: 'Пещера',          bg: ['#05060a', '#0c0e15'], flat: ['#0a0b0e', '#050506'], icon: '#5aa6e8', unlock: 'yellow', lead: 0.9, note: 'замах крита короче' },
+  { id: 'city',   name: 'Пустынный город', bg: ['#7fb6de', '#f2dcaa'], flat: ['#8a3b22', '#c98a3a'], icon: '#d8a84e', unlock: 'ranged', healer: 0.10, note: 'хилеров больше' },
+  { id: 'meteor', name: 'Метеорит',        bg: ['#080818', '#1c0e1a'], flat: ['#5e5b57', '#9a8b6e'], icon: '#e8643c', unlock: 'healer', leaderRage: 1, note: 'вожак сразу зол' }
 ];
+// unlock — какой тип моба впервые появляется в этом биоме (тумблер «Мобы
+// появляются по главам», TUNE.unlock): в Высохшем русле только красные и налёт,
+// в Пещере добавляются жёлтые щитовики, в Пустынном городе — дальники,
+// на Метеорите — хилеры. Со второго круга открыто всё.
 // Фон, когда биомы выключены, и в обучении — как было до биомов.
 var BIOME_PLAIN = { id: 'plain', bg: ['#161a26', '#0b0e15'] };
 var BIOME_LOOP_BONUS = 2;      // +уровень стаи за каждый пройденный круг биомов
@@ -50,6 +54,37 @@ function biomeMod(key) { return TUNE.biomes && TUNE.biomeMods ? curBiome()[key] 
 function biomeHealerRate() { return TUNE.healerRate + (biomeMod('healer') || 0); }
 function biomeLead() { return TUNE.lead * (biomeMod('lead') || 1); }
 
+/* ── Мобы по главам ──────────────────────────────────────────────── */
+
+var UNLOCK_NAMES = { yellow: 'щитовики', ranged: 'дальники', healer: 'хилеры' };
+// Какие новые типы мобов игрок уже видел (карточка «Новый враг» показана).
+// Вне S, чтобы снимки состояния боя совпадали с версией до открытия по главам.
+var UNLOCK = { seen: {} };
+function unlockOn() { return !!TUNE.unlock && !!TUNE.biomes && !!TUNE.adapt && !CIRCLE_MODE && !S.tut; }
+// С какого биома (номер с начала игры) тип в игре; не по главам — с начала.
+function unlockAt(type) {
+  for (var i = 0; i < BIOMES.length; i++) if (BIOMES[i].unlock === type) return i;
+  return 0;
+}
+function mobOpen(type, progress) { return !unlockOn() || biomeIndexAt(progress) >= unlockAt(type); }
+// Карточка нового врага: при первой встрече, когда тип открыт по главам.
+// В авто её некому закрыть — ждёт ручной игры (как карточка главаря).
+function mobIntroDue(type) { return unlockOn() && !!UNLOCK_NAMES[type] && !UNLOCK.seen[type] && !AUTO.on; }
+function mobIntro(type) {
+  UNLOCK.seen[type] = true;
+  markSave();
+  var tip = TUT_TIPS[type];
+  el.tutStep.textContent = 'НОВЫЙ ВРАГ';
+  el.tutOverlay.classList.remove('tut-top');
+  el.tutH.textContent = tip.h;
+  el.tutText.innerHTML = type === 'healer' && TUNE.healRage ? tip.p.replace('</ul>', HEAL_RAGE_TIP + '</ul>') : tip.p;
+  el.tutSkip.hidden = true;
+  el.tutOk.textContent = 'В бой';
+  if (!S.paused) { S.paused = true; S.pauseStart = performance.now(); }
+  S.tutPaused = true;
+  el.tutOverlay.hidden = false;
+}
+
 // Вызывается на спавне обычной стаи: запоминает биом и объявляет смену.
 function enterBiome(now) {
   var idx = biomeIndexAt(S.progress);
@@ -58,7 +93,9 @@ function enterBiome(now) {
   if (!TUNE.biomes) return;
   if (prevIdx == null ? idx > 0 : prevIdx !== idx) {
     var b = BIOMES[idx % BIOMES.length], loop = Math.floor(idx / BIOMES.length);
-    BIOME.banner = { name: b.name + (loop ? ' · круг ' + (loop + 1) : ''), note: TUNE.biomeMods ? b.note || '' : '', start: now };
+    var note = TUNE.biomeMods ? b.note || '' : '';
+    if (unlockOn() && !loop && b.unlock) note = 'появляются ' + UNLOCK_NAMES[b.unlock] + (note ? ' · ' + note : '');
+    BIOME.banner = { name: b.name + (loop ? ' · круг ' + (loop + 1) : ''), note: note, start: now };
     if (prevIdx != null) {
       pushInfo({ kind: 'biome', biome: idx });
       markSave();

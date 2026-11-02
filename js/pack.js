@@ -22,6 +22,11 @@ function rollMobType(noHealer) {
   if (r < TUNE.rangedRate) return 'ranged';
   return 'normal';
 }
+// Тип ещё не открыт по главам (TUNE.unlock) — вместо него красный.
+function rollPackMobType(noHealer) {
+  var t = rollMobType(noHealer);
+  return mobOpen(t, S.progress) ? t : 'normal';
+}
 
 function spawnPack(now) {
   if (S.tut && !S.tut.spawned) { spawnTutorialPack(now); return; }
@@ -62,7 +67,7 @@ function spawnPack(now) {
   var regulars = [], healers = 0;
   for (var i = 0; i < regularCount; i++) {
     var ms = mobStats(S.packLevel, false);
-    var type = rollMobType(healers >= MAX_HEALERS);
+    var type = rollPackMobType(healers >= MAX_HEALERS);
     if (type === 'healer') healers++;
     var m = {
       maxHp: ms.maxHp, hp: ms.maxHp, atk: ms.atk, xp: ms.xp,
