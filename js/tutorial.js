@@ -3,7 +3,8 @@
 
 /* ── Обучение ────────────────────────────────────────────────────── */
 
-// Режим обучения: одна особая стая из всех видов мобов. Когда новый вид
+// Режим обучения: одна особая стая из всех видов мобов (с «Мобами по главам» —
+// только обычные, налёт и вожак, см. tutShort). Когда новый вид
 // выходит вперёд (а дальник и хилер — когда впервые начинают действовать),
 // бой встаёт на паузу и показывается карточка с объяснением.
 // Дальник и хилер «спят», пока до них не дошла очередь в сценарии, чтобы
@@ -11,7 +12,11 @@
 // когда вперёд выходит третий обычный (если налёт мышей включён).
 var TUT_KEY = 'arena.tutorial.done';
 var TUT_ORDER = ['normal', 'yellow', 'ranged', 'bat', 'healer', 'leader'];
-function tutTotal() { return TUT_ORDER.length - (TUNE.bats ? 0 : 1); }
+// Мобы по главам (TUNE.unlock): в обучении только то, что есть в первой главе —
+// обычный, налёт и вожак; остальных игрок встретит в своих биомах (карточка «Новый враг»).
+var TUT_SHORT_ORDER = ['normal', 'bat', 'leader'];
+function tutShort() { return !!TUNE.unlock && !!TUNE.biomes && !!TUNE.adapt; }
+function tutTotal() { return (tutShort() ? TUT_SHORT_ORDER : TUT_ORDER).length - (TUNE.bats ? 0 : 1); }
 var HEAL_RAGE_TIP = '<li>Не прервали каст — хилер в <b>ярости</b>: глаза горят зелёным, следующий каст придёт вдвое быстрее.</li>';
 var TUT_TIPS = {
   normal: { h: 'Обычный моб',
@@ -41,6 +46,8 @@ var TUT_TIPS = {
        '<li>Каждый промах по щиту жёлтого даёт ему корону злости: +50% урона.</li>' +
        '<li>С тремя коронами вожак, пока он не впереди, сбегает и вернётся злым в следующей стае.</li>' +
        '<li>Дерётся как обычный моб: блок крита, потом контратака.</li></ul>' },
+  doneShort: { h: 'Обучение пройдено',
+    p: 'Дальше обычная игра. Новые мобы появляются по главам: щитовики — в Пещере, дальники — в Пустынном городе, хилеры — на Метеорите. При первой встрече покажем, как с ними драться.<br>Точные нажатия копят <b>серию</b> (счётчик под «стаей»): с 5 подряд опыт ×1.1, с 15 — ×1.25, с 30 — ×1.5. Нажатие ровно на щелчок — «идеально», +2. Пропущенный удар или промах серию сбрасывает.<br>Пройти обучение снова: Рюкзак → Настройка.' },
   done: { h: 'Обучение пройдено',
     p: 'Вы встретили всех мобов. Дальше обычная игра.<br>Точные нажатия копят <b>серию</b> (счётчик под «стаей»): с 5 подряд опыт ×1.1, с 15 — ×1.25, с 30 — ×1.5. Нажатие ровно на щелчок — «идеально», +2. Пропущенный удар или промах серию сбрасывает.<br>Пройти обучение снова: Рюкзак → Настройка.' }
 };
@@ -71,6 +78,21 @@ function spawnTutorialPack(now) {
   S.packLevel = S.level;
   S.packResist = 0; PACE.cur = 0;                // память стаи в обучении не действует и не тратится
   var reg = function () { return mobStats(S.packLevel, false); };
+  if (tutShort()) {
+    // обычный → обычный → обычный (зовёт мышь) → вожак
+    var ld0 = tutMob('normal', true, mobStats(S.packLevel, true));
+    var s2 = tutMob('normal', false, reg()); s2.tutKey = null;
+    S.pack = [tutMob('normal', false, reg()), s2];
+    if (TUNE.bats) {
+      var s3 = tutMob('normal', false, reg());
+      s3.tutKey = null; s3.tutWake = 'bat';
+      S.pack.push(s3);
+    }
+    S.pack.push(ld0);
+    S.mobSwingAt = now + dur(TUNE.mobRate * 0.7);
+    S.telegraph = null;
+    return;
+  }
   var n2 = tutMob('normal', false, reg());
   var ld = tutMob('normal', true, mobStats(S.packLevel, true));
   n2.tutKey = null; n2.tutWake = 'ranged';
@@ -98,7 +120,8 @@ function startTutorial() {
 function tutShow(key) {
   if (!S.tut || S.tut.shown[key]) return;
   S.tut.shown[key] = true;
-  var tip = TUT_TIPS[key];
+  if (UNLOCK_NAMES[key]) UNLOCK.seen[key] = true;   // в полном обучении карточку нового врага уже видели
+  var tip = TUT_TIPS[key === 'done' && tutShort() ? 'doneShort' : key];
   if (key !== 'done') S.tut.step++;
   el.tutStep.textContent = key === 'done' ? 'ОБУЧЕНИЕ' : 'ОБУЧЕНИЕ · ' + S.tut.step + ' / ' + tutTotal();
   el.tutOverlay.classList.toggle('tut-top', key === 'bat');

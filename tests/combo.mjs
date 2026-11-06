@@ -20,7 +20,7 @@ const combo = page => page.evaluate(() => ({
 
 // 1. Бот жмёт ровно на щелчок: всё «идеально», серия доходит до ×1.5.
 {
-  const g = await openGame(browser, file, { seed: 11 });
+  const g = await openGame(browser, file, { seed: 11, tune: { unlock: false } });
   await run(g.page, 9000, { bot: { skill: 1 } });
   const c = await combo(g.page);
   check('ровно на щелчок — почти всё идеально', c.blocked > 5 && c.perfect >= c.blocked * 0.9, c);
@@ -49,7 +49,7 @@ const combo = page => page.evaluate(() => ({
 
 // 4. Нажатия вразброс по окну: часть идеально, часть просто хорошо.
 {
-  const g = await openGame(browser, file, { seed: 12 });
+  const g = await openGame(browser, file, { seed: 12, tune: { unlock: false } });
   await run(g.page, 9000, { bot: { skill: 1, jitter: 1 } });
   const c = await combo(g.page);
   check('вразброс — идеально только часть блоков', c.blocked > 5 && c.perfect > 0 && c.perfect < c.blocked, c);
@@ -59,7 +59,7 @@ const combo = page => page.evaluate(() => ({
 
 // 5. Тумблер выключен — серии нет совсем.
 {
-  const g = await openGame(browser, file, { seed: 11, tune: { combo: false } });
+  const g = await openGame(browser, file, { seed: 11, tune: { combo: false, unlock: false } });
   await run(g.page, 6000, { bot: { skill: 1 } });
   const c = await combo(g.page);
   check('тумблер выкл — серии нет', c.n === 0 && c.best === 0 && !c.shown, c);

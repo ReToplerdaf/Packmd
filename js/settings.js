@@ -81,6 +81,7 @@ bindToggle('c-bats', 'bats');
 bindToggle('c-healrage', 'healRage');
 bindToggle('c-biomebg', 'biomeBg');
 bindToggle('c-biomemods', 'biomeMods');
+bindToggle('c-unlock', 'unlock');
 
 // Сброс всех ползунков и тумблеров к умолчаниям версии.
 $('tune-reset').addEventListener('click', function () {

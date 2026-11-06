@@ -28,7 +28,7 @@ async function until(page, fn, max = 4000) {
 }
 // Стая: передний (неубиваемый, ранен) и хилер; больше никто не действует.
 async function setup(tune) {
-  const g = await openGame(browser, file, { seed: 7, tune: Object.assign({ mobRate: 1e8, rangedInterval: 1e8, autoAfter: 0, bats: false }, tune) });
+  const g = await openGame(browser, file, { seed: 7, tune: Object.assign({ mobRate: 1e8, rangedInterval: 1e8, autoAfter: 0, bats: false, unlock: false }, tune) });
   await until(g.page, s => s.phase === 'fight');
   await g.page.evaluate(() => {
     var f = S.pack[0], h = S.pack[1];
